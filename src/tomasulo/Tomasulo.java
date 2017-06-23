@@ -1,5 +1,7 @@
 package tomasulo;
 import GUI.appGUI;
+
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 
 public class Tomasulo {
@@ -32,10 +34,18 @@ public class Tomasulo {
 	private int[] dataMemory;
 	// Memória de instruções
 	private ArrayList<String> instMemory;
-	// COMENTAR
+	// Contador de ids para o Buffer de Reordenação
+	private int bufferId;
+	// Conta quantas instruções foram iniciadas pelo simulador
 	private int instCount;
+	// Contador de clocks
+	private int clockCount;
 	// Program Counter
 	private int pc;
+	
+	// Guarda o índice das Estações de Reserva da única
+	// instrução "lw" que está na segunda etapa de sua execução
+	private int loadStep2 = -1;
 	
 	// Tipo de predição:
 	// 1: COMENTAR
@@ -89,7 +99,9 @@ public class Tomasulo {
 		dataMemory = new int[MEMORYSIZE];
 		instMemory = instructions;
 		
+		bufferId = 0;
 		instCount = 0;
+		clockCount = 0;
 		pc = 0;
 	}
 	
@@ -101,15 +113,25 @@ public class Tomasulo {
 			return "" + n;
 	}
 	
+	// Método utilizado apenas para formatação do output
+	private String outputFormat2(int dest){
+		if (dest == -1)
+			return "";
+		else
+			return "#" + ROB[dest].id;
+	}
+	
 	// Quando chamado, este método atualiza as tabelas de output
 	private void updateTables(){
+		DecimalFormat df = new DecimalFormat("0.000");
+		
 		//Update RSMatrix
 		for(int i=1; i < RSSIZE; i++){
 			RSMatrix[i-1][0] = "ER" + i;
 			RSMatrix[i-1][1] = RS[i].type;
 			RSMatrix[i-1][2] = RS[i].busy ? "Sim" : "Não";
 			RSMatrix[i-1][3] = RS[i].instruction;
-			RSMatrix[i-1][4] = "#" + outputFormat(RS[i].dest);
+			RSMatrix[i-1][4] = outputFormat2(RS[i].dest);
 			RSMatrix[i-1][5] = outputFormat(RS[i].vj);
 			RSMatrix[i-1][6] = outputFormat(RS[i].vk);
 			RSMatrix[i-1][7] = outputFormat(RS[i].qj);
@@ -132,14 +154,14 @@ public class Tomasulo {
 		
 		for(int i=0; i < 8; i++){
 			RegisterStatMatrix[i][0] = "R" + i;
-			RegisterStatMatrix[i][3] = "R" + i + 8;
-			RegisterStatMatrix[i][6] = "R" + i + 16;
-			RegisterStatMatrix[i][9] = "R" + i + 2;
-			RegisterStatMatrix[i][1] = "#" + outputFormat(RegisterStat[i].reorder);
+			RegisterStatMatrix[i][3] = "R" + (i + 8);
+			RegisterStatMatrix[i][6] = "R" + (i + 16);
+			RegisterStatMatrix[i][9] = "R" + (i + 2);
+			RegisterStatMatrix[i][1] = outputFormat2(RegisterStat[i].reorder);
 			RegisterStatMatrix[i][2] = "" + RegisterStat[i].value;	
-			RegisterStatMatrix[i][4] = "#" + outputFormat(RegisterStat[i+8].reorder);
-			RegisterStatMatrix[i][7] = "#" + outputFormat(RegisterStat[i+16].reorder);
-			RegisterStatMatrix[i][10] = "#" + outputFormat(RegisterStat[i+24].reorder);
+			RegisterStatMatrix[i][4] = outputFormat2(RegisterStat[i+8].reorder);
+			RegisterStatMatrix[i][7] = outputFormat2(RegisterStat[i+16].reorder);
+			RegisterStatMatrix[i][10] = outputFormat2(RegisterStat[i+24].reorder);
 			RegisterStatMatrix[i][5] = "" + RegisterStat[i+8].value;
 			RegisterStatMatrix[i][8] = "" + RegisterStat[i+16].value;
 			RegisterStatMatrix[i][11] = "" + RegisterStat[i+24].value;
@@ -147,13 +169,13 @@ public class Tomasulo {
 		
 		gui.updateRegsTable(RegisterStatMatrix);
 		
-		ExecutionDataMatrix[0][1] = "" + Timer.tempoDecorrido();
+		ExecutionDataMatrix[0][1] = "" + clockCount;
 		ExecutionDataMatrix[1][1] =	"" + pc;
 		ExecutionDataMatrix[2][1] =	"" + instCount;
 		if(Timer.tempoDecorrido() == 0)
 			ExecutionDataMatrix[3][1] = ""; 
 		else
-			ExecutionDataMatrix[3][1] =	"" + instCount/Timer.tempoDecorrido();
+			ExecutionDataMatrix[3][1] =	"" + df.format(instCount * 1.0 / clockCount);
 		
 		gui.updateExecTable(ExecutionDataMatrix);
 		
@@ -202,6 +224,7 @@ public class Tomasulo {
 			if (pc < instMemory.size())
 				issue();
 			
+			clockCount++;
 			updateTables();
 		}
 	}
@@ -258,6 +281,7 @@ public class Tomasulo {
 		// Em caso de jmp, basta atualizar o pc
 		if (type == 'J'){
 			pc = address;
+			instCount++;
 			return;
 		}
 		
@@ -328,7 +352,7 @@ public class Tomasulo {
 		ROB[b].instruction = name;
 		ROB[b].inst_param = param;
 		ROB[b].state = "Issue";
-		ROB[b].id = instCount + 1;
+		ROB[b].id = bufferId + 1;
 		ROB[b].pc = pc;
 		ROB[b].busy = true;
 		
@@ -369,7 +393,10 @@ public class Tomasulo {
 		else
 			RS[r].time = 1;
 		
-		// COMENTAR
+		// Dado que um novo elemento foi adicionado ao Buffer de Reordenação,
+		// precisamos incrementar o contador de ids
+		bufferId++;
+		// E, obviamente, o contador de instruções
 		instCount++;
 		
 		// Em caso de alteração no seguimento do programa, makeDetour faz a
@@ -381,60 +408,89 @@ public class Tomasulo {
 	}
 
 	private void execute(){
-		int loadStep2 = -1;
+		// Verifica inicialmente se a segunda etapa da instrução
+		// "lw" já não está sendo executada
+		boolean loadStep2Free = (loadStep2 == -1);
 		
+		// Analisar a situação para cada elemento da Estação
+		// de Reserva
 		for (int r = 1; r < RSSIZE; r++){
+			// Se não estiver ocupado, não nos interessa
 			if (!RS[r].busy)
 				continue;
 			
+			// Podemos pular instruções cujo tempo de execução já
+			// já zerou (execução concluída)
+			if (RS[r].time <= 0)
+				continue;
+			
+			// h é o índice do elemento correspondente no Buffer de
+			// Reordenação
 			int h = RS[r].dest;
 			
-			if (ROB[h].state.equals("Issue")){
-				boolean startCondition = false;
+			// Caso ainda esteja no estado "Issue", a execução ainda
+			// não começou. Precisamos verificar se as condições
+			// para iniciá-la são satisfeitas (a primeira delas é que
+			// não exista mais dependência em qj)
+			if (ROB[h].state.equals("Issue") && RS[r].qj == 0){
+				boolean startCondition;
 				
+				// Em caso de "sw", a instrução precisa estar no primeiro
+				// elemento do Buffer de Reordenação
 				if (RS[r].instruction.equals("sw"))
-					startCondition = (h == bufferHead() && RS[r].qj == 0);
+					startCondition = (h == bufferHead());
 				
+				// Em caso de "lw", não pode haver instruções "sw" anteriores
+				// ainda não finalizadas
 				else if (RS[r].equals("lw"))
-					startCondition = (noStoresBefore(h) && RS[r].qj == 0);
+					startCondition = noStoresBefore(h);
 				
-				// FP op. (discutivel?)
+				// Suspeito. Além disso, qk para lw não parece definido,
+				// assim como rd para tipo R
+				// COMENTAR
 				else
-					startCondition = (RS[r].qj == 0 && RS[r].qk == 0);
+					startCondition = (RS[r].qk == 0);
 				
 				if (startCondition)
 					ROB[h].state = "Execute";
 			}
 			
-			if (RS[r].time <= 0)
-				continue;
-			
+			// Caso já tenhamos iniciado a execução
 			if (ROB[h].state.equals("Execute")){
 				
+				// Instruções "lw" se dividem em duas etapas, ambas
+				// de 2 clocks de duração. Por uma limitação de hardware,
+				// duas instruções não podem estar executando a segunda
+				// etapa simultaneamente 
 				if (RS[r].instruction.equals("lw")){
 					// Ainda na primeira etapa
-					if (RS[r].time > 1){
-						if (--RS[r].time == 1)
+					if (RS[r].time > 2){
+						// Executar primeira etapa se contador chegar a 2
+						if (--RS[r].time == 2)
 							RS[r].a = RS[r].vj + RS[r].a;
 					}
 					
 					// Aguardando segunda etapa iniciar
-					else if (RS[r].time == 1){
+					else if (RS[r].time == 2 && loadStep2Free){
+						// É necessário que o endereço requisitado não
+						// esteja sujeito a um comando "sw" anterior
 						if (noStoresBeforeWithAddress(h, RS[r].a)){
 							if (loadStep2 != -1){
 								int b = RS[loadStep2].dest;
+								// Em caso de empate, prioriade é do mais
+								// mais antigo
 								if (h < b)
 									loadStep2 = r;
 							}
 							else loadStep2 = r;
 						}
 					}
-					
-					// Durante segunda etapa
-					else RS[r].time--;
 				}
 				
+				// Instruções diferentes de "lw"
 				else{
+					// Só atualizam RS[r].result assim que o tempo
+					// chega em zero
 					if (--RS[r].time != 0)
 						continue;
 					
@@ -450,9 +506,15 @@ public class Tomasulo {
 					else if (RS[r].instruction.equals("addi"))
 						RS[r].result = RS[r].vj + RS[r].a;
 					
+					// Caso especial: resultado em ROB[h].a
 					else if (RS[r].instruction.equals("sw"))
 						ROB[h].a = RS[r].vj + RS[r].a;
 					
+					// BRANCHES =================================
+					// É necessário dividir RS[r].a por 4 para as instruções
+					// de branch. Isso ocorre porque nosso pc faz contagem
+					// por instrução, e não por byte -> cada instrução possui
+					// 32 bits = 4 bytes
 					else if (RS[r].instruction.equals("beq"))
 						if (RS[r].vj == RS[r].vk)
 							RS[r].result = ROB[h].pc + RS[r].a / 4 + 1;
@@ -470,39 +532,61 @@ public class Tomasulo {
 							RS[r].result = ROB[h].pc + RS[r].a / 4 + 1;
 						else
 							RS[r].result = ROB[h].pc + 1;
+					// ==========================================
 				}
 				
 			}
 		}
 		
-		// Segunda etapa do load
+		// loadStep2 != -1 se houver alguma instrução "lw" executando
+		// sua segunda etapa
 		if (loadStep2 != -1){
 			int r = loadStep2;
-			int a = RS[r].a;
-			RS[r].time--;
-			RS[r].result = dataMemory[a];
+			
+			// Se a etapa encerrar
+			if (--RS[r].time == 0){
+				int a = RS[r].a;
+				RS[r].result = dataMemory[a];
+				// Libera posição para outra instrução "lw" que queira
+				// executar sua segunda etapa
+				loadStep2 = -1;
+			}
 		}
 	}
 
 	private void store(){
+		// Durante a operação de store de instruções não "sw",
+		// apenas uma instrução pode utilizar o barramento por
+		// clock. cdb guarda o índice na Estação de Reserva da
+		// instrução que utilizará o barramento
 		int cdb = -1;
 		
+		// Para cada tarefa na Estação de Reserva
 		for (int r = 1; r < RSSIZE; r++){
+			// Não estamos interassados em tarefas já realizadas
 			if (!RS[r].busy)
 				continue;
 			
+			// Só podemos realizar a operação de store após o término
+			// da execução
 			int h = RS[r].dest;
 			if (!ROB[h].state.equals("Execute") || RS[r].time != 0)
 				continue;
 			
+			// Caso "sw"
 			if (RS[r].instruction.equals("sw")){
+				// qk precisa estar livre de dependência
 				if (RS[r].qk == 0){
+					// Atualiza o valor no Buffer de Reordenação
 					ROB[h].value = RS[r].vk;
 					ROB[h].state = "Write";
+					// Desocupa Estação de Reserva
 					RS[r].busy = false;
 				}
 			}
 			
+			// Demais instruções disputam pelo barramento. Será armazenada
+			// em cdb a de maior prioridade (mais antiga) após o for
 			else{
 				if (cdb != -1){
 					int b = RS[cdb].dest;
@@ -514,12 +598,20 @@ public class Tomasulo {
 			
 		}
 		
+		// Se cdb == -1, então nenhuma instrução solicitou
+		// o barramento
 		if (cdb != -1){
 			int r = cdb;
 			int h = RS[r].dest;
 			
+			// Por que não esperar qk == 0?
+			
+			// Desocupa Estação de Reserva
 			RS[r].busy = false;
 			
+			// Atualiza os valores vj e vk de todas as
+			// instruções que dependiam do novo resultado
+			// calculado
 			for (int x = 1; x < RSSIZE; x++){
 				if (RS[x].qj == h){
 					RS[x].vj = RS[r].result;
@@ -531,26 +623,32 @@ public class Tomasulo {
 				}
 			}
 			
+			// Atualiza Buffer de Reordenação
 			ROB[h].value = RS[r].result;
 			ROB[h].state = "Write";
 		}
 	}
 	
 	private void consolidate(){
+		// Apenas o primeiro elemento do Buffer de Reordenação
+		// pode ser consolidado
 		int h = bufferHead();
 		
+		// Buffer de Reordenação vazio
 		if (h < 0)
 			return;
 		
+		// Só faz sentido consolidar uma instrução no estado "Write"
 		if (!ROB[h].state.equals("Write"))
 			return;
 		
+		// Destino do resultado
 		int dest = ROB[h].dest;
 		
+		// COMENTAR
 		if (ROB[h].instruction.equals("beq") ||
 			ROB[h].instruction.equals("ble") ||
 			ROB[h].instruction.equals("bne")){
-			// Como verificar se o branch foi mispredicted?
 			
 			if (detourBuffer[ROB[h].pc].destPC != ROB[h].value){
 				System.out.println("ERRRRRRROUUUU\n");
@@ -578,7 +676,7 @@ public class Tomasulo {
 					}	
 				}
 					
-				instCount = ROB[h].id;
+				bufferId = ROB[h].id;
 				
 				for (int b = 1; b < ROBSIZE; b++){
 					if (ROB[b].id > ROB[h].id){
@@ -615,20 +713,25 @@ public class Tomasulo {
 			
 		}
 		
+		// Caso "sw", armazenar ROB[h].value na posição de memória calculada
 		else if (ROB[h].instruction.equals("sw")){
 			int a = ROB[h].a;
 			dataMemory[a] = ROB[h].value;
 		}
 		
+		// Nos demais casos, colocar no registrador "dest" o resultado
 		else
 			RegisterStat[dest].value = ROB[h].value;
 		
+		// Liberar o Buffer de Reordenação
 		ROB[h].busy = false;
 		ROB[h].state = "Commit";
+		// Liberar o registrador, se não há mais dependência
 		if (dest >= 0 && RegisterStat[dest].reorder == h)
 			RegisterStat[dest].busy = false;
 	}
 	
+	// FUNÇÕES AUXILIARES =======================================
 	private boolean noStoresBefore(int l){
 		for (int b = 1; b < ROBSIZE; b++)
 			if (ROB[b].id < ROB[l].id && ROB[b].instruction.equals("sw"))
@@ -661,7 +764,7 @@ public class Tomasulo {
 	}
 	
 	private int nextBufferEntry(){
-		int id = instCount % (ROBSIZE - 1) + 1;
+		int id = bufferId % (ROBSIZE - 1) + 1;
 		if (ROB[id].busy)
 			return -1;
 		return id;
@@ -683,4 +786,5 @@ public class Tomasulo {
 		
 		return head;
 	}
+	// ==========================================================
 }

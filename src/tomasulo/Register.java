@@ -1,7 +1,10 @@
 package tomasulo;
+
+// Informações de um registrador
+// Funciona como struct
 public class Register {
 	
-	private int id;
+	public int id;
 	public int reorder;
 	public int value;
 	public boolean busy;

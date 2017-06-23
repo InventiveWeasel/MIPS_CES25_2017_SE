@@ -2,9 +2,26 @@ package tomasulo;
 
 import java.util.ArrayList;
 
+// Classe abstrata
+// Funciona apenas como auxiliar para obter informações de uma
+// dada instrução
 public abstract class Instructions {
 
+	// O seguinte método estático recebe como argumento uma instrução
+	// (String em binário) e retorna as seguintes informações, na ordem descrita:
 	// tipo, nome, parametros, categoria, immediate, address, rd, rs, rt
+	// tipo (char): R, I ou J
+	// nome (String): nome da instrução
+	// parâmetros (String): parâmetros da instrução (apenas um formato de output)
+	// categoria (String): Load/Store, Add ou Mult
+	// immediate (int): valor imediato
+	// address (int): endereço de memória
+	// rd (int): registrador
+	// rs (int): registrador
+	// rt (int): registrador
+	
+	// Obviamente, nenhuma instrução retornará todas essas informações.
+	// Os campos desnecessários serão preenchidos com null
 	public static ArrayList<Object> getInfo(String inst){
 		ArrayList<Object> info = new ArrayList<Object>();
 		

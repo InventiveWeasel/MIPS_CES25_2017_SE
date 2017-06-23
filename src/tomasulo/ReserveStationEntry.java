@@ -1,8 +1,10 @@
 package tomasulo;
 
+//Apenas um elemento da Estação de Reserva
+//Funciona como struct
 public class ReserveStationEntry {
 	
-	private int id;
+	public int id;
 	public String type;
 	public boolean busy;
 	public String instruction;
