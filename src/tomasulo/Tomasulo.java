@@ -259,6 +259,8 @@ public class Tomasulo {
 		}
 		else if (type == 'I'){
 			RS[r].a = immediate;
+			RegisterStat[rt].reorder = b;
+			RegisterStat[rt].busy = true;
 			ROB[b].dest = rt;
 		}
 		
@@ -458,7 +460,7 @@ public class Tomasulo {
 			// Como verificar se o branch foi mispredicted?
 			
 			if (detourBuffer[ROB[h].pc].destPC != ROB[h].value){
-				System.out.println("ERRRRRRROUUUU\n");
+				//System.out.println("ERRRRRRROUUUU\n");
 				
 				pc = ROB[h].value; // fetch PC
 				

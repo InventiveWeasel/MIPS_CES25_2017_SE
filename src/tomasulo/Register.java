@@ -9,7 +9,7 @@ public class Register {
 	public Register(int id){
 		this.id = id;
 		reorder = -1;
-		value = -1;
+		value = 0;
 		busy = false;
 	}
 
