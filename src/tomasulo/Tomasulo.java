@@ -63,7 +63,7 @@ public class Tomasulo {
 	// Construtor: apenas inicializa e declara algumas variávels
 	public Tomasulo(ArrayList<String> instructions, int type, appGUI frame){
 		gui = frame; 
-		//gui.setTomasulo(this);
+		gui.setTomasulo(this);
 		predictionType = type;
 		
 		RegisterStat = new Register[REGSIZE];
