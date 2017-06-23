@@ -204,38 +204,85 @@ public class Tomasulo {
 
 	// NAO TERMINADO
 	private void execute(){
+		int loadStep2 = -1;
+		
 		for (int r = 1; r < RSSIZE; r++){
 			if (!RS[r].busy)
 				continue;
 			
-			if (--RS[r].time > 0)
-				continue;
+			int h = RS[r].dest;
 			
-			if (RS[r].instruction.equals("lw")){
-				// Condicao
+			if (ROB[h].state.equals("Issue")){
+				boolean startCondition = false;
 				
-				// Etapa 1
+				if (RS[r].instruction.equals("sw"))
+					startCondition = (h == bufferHead() && RS[r].qj == 0);
 				
-				// Etapa 2
+				else if (RS[r].equals("lw"))
+					startCondition = (noStoresBefore(h) && RS[r].qj == 0);
+				
+				// FP op. (discutivel?)
+				else
+					startCondition = (RS[r].qj == 0 && RS[r].qk == 0);
+				
+				if (startCondition)
+					ROB[h].state = "Execute";
 			}
 			
-			else if (RS[r].instruction.equals("sw")){
-				// Condicao
-				
-				// Codigo
-			}
-			
-			else if (RS[r].qj != 0 || RS[r].qk != 0)
+			if (RS[r].time <= 0)
 				continue;
 			
-			if (RS[r].instruction.equals("add"))
-				RS[r].result = RS[r].vj + RS[r].vk;
-			
-			else if (RS[r].instruction.equals("sub"))
-				RS[r].result = RS[r].vj - RS[r].vk;
-			
-			else if (RS[r].instruction.equals("mul"))
-				RS[r].result = RS[r].vj * RS[r].vk;
+			if (ROB[h].state.equals("Execute")){
+				
+				if (RS[r].instruction.equals("lw")){
+					// Ainda na primeira etapa
+					if (RS[r].time > 1){
+						if (--RS[r].time == 1)
+							RS[r].a = RS[r].vj + RS[r].a;
+					}
+					
+					// Aguardando segunda etapa iniciar
+					else if (RS[r].time == 1){
+						if (noStoresBeforeWithAddress(h, RS[r].a)){
+							if (loadStep2 != -1){
+								int b = RS[loadStep2].dest;
+								if (h < b)
+									loadStep2 = r;
+							}
+							else loadStep2 = r;
+						}
+					}
+					
+					// Durante segunda etapa
+					else RS[r].time--;
+				}
+				
+				else{
+					if (--RS[r].time != 0)
+						continue;
+					
+					if (RS[r].instruction.equals("add"))
+						RS[r].result = RS[r].vj + RS[r].vk;
+					
+					else if (RS[r].instruction.equals("sub"))
+						RS[r].result = RS[r].vj - RS[r].vk;
+					
+					else if (RS[r].instruction.equals("mul"))
+						RS[r].result = RS[r].vj * RS[r].vk;
+					
+					else if (RS[r].instruction.equals("sw"))
+						ROB[h].a = RS[r].vj + RS[r].a;
+				}
+				
+			}
+		}
+		
+		// Segunda etapa do load
+		if (loadStep2 != -1){
+			int r = loadStep2;
+			int a = RS[r].a;
+			RS[r].time--;
+			RS[r].result = dataMemory[a];
 		}
 	}
 
@@ -258,9 +305,12 @@ public class Tomasulo {
 			}
 			
 			else{
-				int b = RS[cdb].dest;
-				if (cdb < 0 || ROB[h].id < ROB[b].id)
-					cdb = r;
+				if (cdb != -1){
+					int b = RS[cdb].dest;
+					if (ROB[h].id < ROB[b].id)
+						cdb = r;
+				}
+				else cdb = r;
 			}
 			
 		}
@@ -366,8 +416,22 @@ public class Tomasulo {
 			RegisterStat[dest].busy = false;
 	}
 	
-	private boolean isFirstLoad(int dest) {
-		return false;
+	private boolean noStoresBefore(int l){
+		for (int b = 1; b < ROBSIZE; b++)
+			if (ROB[b].id < ROB[l].id && ROB[b].instruction.equals("sw"))
+				return false;
+		
+		return true;
+	}
+	
+	private boolean noStoresBeforeWithAddress(int l, int a){
+		for (int b = 1; b < ROBSIZE; b++)
+			if (ROB[b].a == a &&
+				ROB[b].id < ROB[l].id &&
+				ROB[b].instruction.equals("sw"))
+				return false;
+		
+		return true;
 	}
 	
 	private int nextReserveStationEntry(String type){
@@ -383,9 +447,18 @@ public class Tomasulo {
 	}
 	
 	private int nextBufferEntry(){
-		int id = instCount % ROBSIZE + 1;
+		int id = instCount % (ROBSIZE - 1) + 1;
 		if (ROB[id].busy)
 			return -1;
 		return id;
+	}
+
+	private int bufferHead(){
+		int head = 1;
+		for (int b = 2; b < ROBSIZE; b++)
+			if (ROB[b].id < ROB[head].id)
+				head = b;
+		
+		return head;
 	}
 }
