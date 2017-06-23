@@ -1,8 +1,12 @@
 package tomasulo;
 import GUI.appGUI;
 
+import java.math.RoundingMode;
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Locale;
 
 public class Tomasulo {
 	
@@ -210,12 +214,14 @@ public class Tomasulo {
 		
 		while (!finished()){
 			int start = Timer.tempoDecorrido();
+			Instant startInst = Instant.now();
 			int end = Timer.tempoDecorrido();
+			
 			
 			if(!pause){
 				// Espera 1 clock do Timer antes de avançar
 				while(end - start < 1){
-					end = Timer.tempoDecorrido();
+					end = Timer.tempoDecorrido(startInst, start);
 				}
 				
 				// As fases do algoritmo são executadas em ordem contrária,
@@ -802,5 +808,20 @@ public class Tomasulo {
 	
 	public void play(){
 		pause = false;
+	}
+	
+	public void slowDown(){
+		Timer.decClock();
+	}
+	
+	public void fastForward(){
+		Timer.incClock();
+	}
+	
+	public String getClockRate(){
+		DecimalFormat formatter = new DecimalFormat("#.######", DecimalFormatSymbols.getInstance( Locale.ENGLISH ));
+		formatter.setRoundingMode( RoundingMode.DOWN );
+		String s = formatter.format(Timer.getClockPerSec());
+		return s;
 	}
 }

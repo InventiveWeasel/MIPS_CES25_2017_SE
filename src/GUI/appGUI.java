@@ -29,6 +29,8 @@ import java.awt.Color;
 import javax.swing.ImageIcon;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import javax.swing.JLabel;
+import java.awt.Font;
 
 public class appGUI extends JFrame {
 
@@ -39,6 +41,7 @@ public class appGUI extends JFrame {
 	private JTable table_3;
 	private JTable table_4;
 	private Tomasulo tomasulo;
+	private JLabel lblNewLabel;
 
 	/**
 	 * Launch the application.
@@ -117,7 +120,7 @@ public class appGUI extends JFrame {
 		scrollPane.setViewportView(table);
 		
 		JPanel panel = new JPanel();
-		panel.setBounds(774, 23, 269, 30);
+		panel.setBounds(774, 23, 352, 30);
 		contentPane.add(panel);
 		panel.setLayout(new BoxLayout(panel, BoxLayout.X_AXIS));
 		
@@ -133,6 +136,19 @@ public class appGUI extends JFrame {
 		});
 		panel_1.add(btnNewButton);
 		
+		JPanel panel_9 = new JPanel();
+		panel.add(panel_9);
+		panel_9.setLayout(new BorderLayout(0, 0));
+		
+		JButton btnSlowdown = new JButton("SlowDown");
+		btnSlowdown.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				tomasulo.slowDown();
+				setClockLabel(tomasulo.getClockRate());
+			}
+		});
+		panel_9.add(btnSlowdown, BorderLayout.CENTER);
+		
 		JPanel panel_2 = new JPanel();
 		panel.add(panel_2);
 		panel_2.setLayout(new BorderLayout(0, 0));
@@ -140,6 +156,8 @@ public class appGUI extends JFrame {
 		JButton btnNewButton_1 = new JButton("FastForward");
 		btnNewButton_1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				tomasulo.fastForward();
+				setClockLabel(tomasulo.getClockRate());
 			}
 		});
 		panel_2.add(btnNewButton_1);
@@ -158,12 +176,12 @@ public class appGUI extends JFrame {
 		
 		JPanel panel_5 = new JPanel();
 		panel_5.setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "Mem\u00F3ria Recente Usada", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
-		panel_5.setBounds(774, 64, 244, 114);
+		panel_5.setBounds(774, 109, 352, 114);
 		contentPane.add(panel_5);
 		panel_5.setLayout(null);
 		
 		JScrollPane scrollPane_1 = new JScrollPane();
-		scrollPane_1.setBounds(6, 16, 228, 91);
+		scrollPane_1.setBounds(6, 16, 336, 91);
 		panel_5.add(scrollPane_1);
 		
 		table_1 = new JTable();
@@ -182,7 +200,7 @@ public class appGUI extends JFrame {
 		
 		JPanel panel_6 = new JPanel();
 		panel_6.setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "Dados de Execu\u00E7\u00E3o", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
-		panel_6.setBounds(774, 180, 352, 117);
+		panel_6.setBounds(774, 234, 352, 117);
 		contentPane.add(panel_6);
 		panel_6.setLayout(null);
 		
@@ -211,7 +229,7 @@ public class appGUI extends JFrame {
 		
 		JPanel panel_7 = new JPanel();
 		panel_7.setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "Buffer de Reordena\u00E7\u00E3o", TitledBorder.CENTER, TitledBorder.TOP, null, new Color(0, 0, 0)));
-		panel_7.setBounds(37, 298, 591, 212);
+		panel_7.setBounds(37, 330, 591, 212);
 		contentPane.add(panel_7);
 		panel_7.setLayout(null);
 		
@@ -241,7 +259,7 @@ public class appGUI extends JFrame {
 		
 		JPanel panel_8 = new JPanel();
 		panel_8.setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "Registradores", TitledBorder.CENTER, TitledBorder.TOP, null, new Color(0, 0, 0)));
-		panel_8.setBounds(638, 330, 488, 180);
+		panel_8.setBounds(638, 362, 488, 180);
 		contentPane.add(panel_8);
 		panel_8.setLayout(null);
 		
@@ -266,6 +284,11 @@ public class appGUI extends JFrame {
 			}
 		));
 		scrollPane_4.setViewportView(table_4);
+		
+		lblNewLabel = new JLabel("Clocks por Segundo: 1");
+		lblNewLabel.setFont(new Font("Tahoma", Font.PLAIN, 14));
+		lblNewLabel.setBounds(784, 64, 175, 22);
+		contentPane.add(lblNewLabel);
 	}
 	
 	public void updateExecTable(String[][] exec){
@@ -315,5 +338,9 @@ public class appGUI extends JFrame {
 	
 	public void setTomasulo(Tomasulo tom){
 		tomasulo = tom;
+	}
+	
+	private void setClockLabel(String s){
+		lblNewLabel.setText("Clocks por Segundo: "+s);
 	}
 }
