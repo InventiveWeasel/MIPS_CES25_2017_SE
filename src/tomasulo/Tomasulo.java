@@ -13,6 +13,7 @@ public class Tomasulo {
 	private final int ROBSIZE = 1 + 10; // id 0 nao utilizado
 	private final int RSSIZE = 1 + 11; // id 0 nao utilizado
 	private final int MEMORYSIZE = 4096;
+	private final int MAXRECENTMEM = 4;
 	
 	// Vetor de estados dos registradores (indexados de 0 a 31)
 	private Register[] RegisterStat;
@@ -34,6 +35,8 @@ public class Tomasulo {
 	private int[] dataMemory;
 	// Memória de instruções
 	private ArrayList<String> instMemory;
+	// Memória recentemente utilizada
+	private ArrayList<Integer> recentMemory;
 	// Contador de ids para o Buffer de Reordenação
 	private int bufferId;
 	// Conta quantas instruções foram iniciadas pelo simulador
@@ -93,16 +96,31 @@ public class Tomasulo {
 		// Campos estáticos da matriz de output
 		ExecutionDataMatrix[0][0] = "Clock Corrente";
 		ExecutionDataMatrix[1][0] = "PC";
-		ExecutionDataMatrix[2][0] =	"Número de Instruções Contadas";
+		ExecutionDataMatrix[2][0] =	"N. Instruções Contadas";
 		ExecutionDataMatrix[3][0] = "Clock por Instrução (CPI)";
 		
 		dataMemory = new int[MEMORYSIZE];
 		instMemory = instructions;
+		recentMemory = new ArrayList<Integer>();
 		
 		bufferId = 0;
 		instCount = 0;
 		clockCount = 0;
 		pc = 0;
+	}
+	
+	// Atualiza a lista de posições recentes de memória
+	private void updateRecentMemory(int p){
+		int index = recentMemory.indexOf(p);
+		
+		if (index == -1){
+			if (recentMemory.size() == MAXRECENTMEM)
+				recentMemory.remove(MAXRECENTMEM - 1);
+		}
+		else
+			recentMemory.remove(index);
+		
+		recentMemory.add(0, p);
 	}
 	
 	// Método utilizado apenas para formatação do output
@@ -179,10 +197,13 @@ public class Tomasulo {
 		
 		gui.updateExecTable(ExecutionDataMatrix);
 		
-		/*RecentUsedMemoryMatrix[3][0] = RecentUsedMemoryMatrix[2][0];
-		RecentUsedMemoryMatrix[2][0] = RecentUsedMemoryMatrix[1][0];
-		RecentUsedMemoryMatrix[1][0] = RecentUsedMemoryMatrix[0][0];
-		RecentUsedMemoryMatrix[0][0] = ;*/
+		for (int i = 0; i < recentMemory.size(); i++){
+			int a = recentMemory.get(i);
+			RecentUsedMemoryMatrix[i][0] = "" + a;
+			RecentUsedMemoryMatrix[i][1] = "" + dataMemory[a];
+		}
+		
+		gui.updateRecUsedMemTable(RecentUsedMemoryMatrix);
 		
 	}
 	
@@ -547,6 +568,7 @@ public class Tomasulo {
 			if (--RS[r].time == 0){
 				int a = RS[r].a;
 				RS[r].result = dataMemory[a];
+				updateRecentMemory(a);
 				// Libera posição para outra instrução "lw" que queira
 				// executar sua segunda etapa
 				loadStep2 = -1;
@@ -717,6 +739,7 @@ public class Tomasulo {
 		else if (ROB[h].instruction.equals("sw")){
 			int a = ROB[h].a;
 			dataMemory[a] = ROB[h].value;
+			updateRecentMemory(a);
 		}
 		
 		// Nos demais casos, colocar no registrador "dest" o resultado
