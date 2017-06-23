@@ -197,8 +197,10 @@ public class Tomasulo {
 		Integer rs = (Integer)instInfo.get(7);
 		Integer rt = (Integer)instInfo.get(8);
 		
-		if (type == 'J')
+		if (type == 'J'){
 			pc = address;
+			return;
+		}
 		
 		int b = nextBufferEntry();
 		if (b < 0)
@@ -257,22 +259,19 @@ public class Tomasulo {
 			RegisterStat[rd].busy = true;
 			ROB[b].dest = rd;
 		}
-		else if (type == 'I'){
+		else if (type == 'I')
 			RS[r].a = immediate;
+		
+		if (name.equals("lw") || name.equals("addi")){
 			RegisterStat[rt].reorder = b;
 			RegisterStat[rt].busy = true;
 			ROB[b].dest = rt;
 		}
 		
-		if (name.equals("lw")){
+		if (name.equals("lw"))
 			RS[r].time = 4;
-			RegisterStat[rt].reorder = b;
-			RegisterStat[rt].busy = true;
-			ROB[b].dest = rt;
-		}
-		else if (name.equals("sw")){
+		else if (name.equals("sw"))
 			RS[r].time = 4;
-		}
 		else if (name.equals("mul"))
 			RS[r].time = 3;
 		else
@@ -460,7 +459,7 @@ public class Tomasulo {
 			// Como verificar se o branch foi mispredicted?
 			
 			if (detourBuffer[ROB[h].pc].destPC != ROB[h].value){
-				//System.out.println("ERRRRRRROUUUU\n");
+				System.out.println("ERRRRRRROUUUU\n");
 				
 				pc = ROB[h].value; // fetch PC
 				
@@ -506,6 +505,8 @@ public class Tomasulo {
 				}
 			}
 			else{
+				System.out.println("MISERAVI\n");
+				
 				if(predictionType == 4){
 					switch(detourBuffer[ROB[h].pc].bitPredictor){
 					case 0:

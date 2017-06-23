@@ -21,7 +21,7 @@ public class MIPS {
 		
 		try {
 			bufferInsts();	
-			Tomasulo tomas = new Tomasulo(instMemory, 1, frame);
+			Tomasulo tomas = new Tomasulo(instMemory, 4, frame);
 			tomas.run();
 			
 		} catch (IOException e) {
