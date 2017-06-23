@@ -23,6 +23,7 @@ import java.awt.Dimension;
 import javax.swing.border.TitledBorder;
 import javax.swing.UIManager;
 import java.awt.Color;
+import javax.swing.ImageIcon;
 
 public class appGUI extends JFrame {
 
@@ -68,8 +69,9 @@ public class appGUI extends JFrame {
 	 * Create the frame.
 	 */
 	public appGUI() {
+		setTitle("MIPS_CES25");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 926, 582);
+		setBounds(100, 100, 1200, 600);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		setContentPane(contentPane);
@@ -77,13 +79,13 @@ public class appGUI extends JFrame {
 		
 		JPanel panel_4 = new JPanel();
 		panel_4.setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "Esta\u00E7\u00F5es de Reserva", TitledBorder.CENTER, TitledBorder.TOP, null, new Color(0, 0, 0)));
-		panel_4.setBounds(37, 23, 580, 226);
+		panel_4.setBounds(37, 23, 652, 226);
 		contentPane.add(panel_4);
 		panel_4.setLayout(null);
 		//contentPane.setLayout(null);
 		
 		JScrollPane scrollPane = new JScrollPane();
-		scrollPane.setBounds(6, 16, 564, 203);
+		scrollPane.setBounds(6, 16, 636, 203);
 		panel_4.add(scrollPane);
 		
 		table = new JTable();
@@ -109,7 +111,7 @@ public class appGUI extends JFrame {
 		scrollPane.setViewportView(table);
 		
 		JPanel panel = new JPanel();
-		panel.setBounds(631, 23, 269, 30);
+		panel.setBounds(774, 23, 269, 30);
 		contentPane.add(panel);
 		panel.setLayout(new BoxLayout(panel, BoxLayout.X_AXIS));
 		
@@ -136,7 +138,7 @@ public class appGUI extends JFrame {
 		
 		JPanel panel_5 = new JPanel();
 		panel_5.setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "Mem\u00F3ria Recente Usada", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
-		panel_5.setBounds(627, 64, 244, 114);
+		panel_5.setBounds(774, 64, 244, 114);
 		contentPane.add(panel_5);
 		panel_5.setLayout(null);
 		
@@ -160,12 +162,12 @@ public class appGUI extends JFrame {
 		
 		JPanel panel_6 = new JPanel();
 		panel_6.setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "Dados de Execu\u00E7\u00E3o", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
-		panel_6.setBounds(627, 178, 244, 117);
+		panel_6.setBounds(774, 180, 352, 117);
 		contentPane.add(panel_6);
 		panel_6.setLayout(null);
 		
 		JScrollPane scrollPane_2 = new JScrollPane();
-		scrollPane_2.setBounds(6, 16, 232, 94);
+		scrollPane_2.setBounds(6, 16, 336, 94);
 		panel_6.add(scrollPane_2);
 		
 		table_2 = new JTable();
@@ -180,17 +182,21 @@ public class appGUI extends JFrame {
 				"Grandeza", "Valor"
 			}
 		));
+		table_2.getColumnModel().getColumn(0).setResizable(false);
 		table_2.getColumnModel().getColumn(0).setPreferredWidth(187);
+		table_2.getColumnModel().getColumn(0).setMinWidth(187);
+		table_2.getColumnModel().getColumn(1).setResizable(false);
+		table_2.getColumnModel().getColumn(1).setMinWidth(75);
 		scrollPane_2.setViewportView(table_2);
 		
 		JPanel panel_7 = new JPanel();
 		panel_7.setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "Buffer de Reordena\u00E7\u00E3o", TitledBorder.CENTER, TitledBorder.TOP, null, new Color(0, 0, 0)));
-		panel_7.setBounds(37, 298, 435, 212);
+		panel_7.setBounds(37, 298, 591, 212);
 		contentPane.add(panel_7);
 		panel_7.setLayout(null);
 		
 		JScrollPane scrollPane_3 = new JScrollPane();
-		scrollPane_3.setBounds(6, 16, 423, 189);
+		scrollPane_3.setBounds(6, 16, 575, 189);
 		panel_7.add(scrollPane_3);
 		
 		table_3 = new JTable();
@@ -215,12 +221,12 @@ public class appGUI extends JFrame {
 		
 		JPanel panel_8 = new JPanel();
 		panel_8.setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "Registradores", TitledBorder.CENTER, TitledBorder.TOP, null, new Color(0, 0, 0)));
-		panel_8.setBounds(555, 308, 316, 180);
+		panel_8.setBounds(638, 330, 488, 180);
 		contentPane.add(panel_8);
 		panel_8.setLayout(null);
 		
 		JScrollPane scrollPane_4 = new JScrollPane();
-		scrollPane_4.setBounds(6, 16, 304, 157);
+		scrollPane_4.setBounds(6, 16, 472, 157);
 		panel_8.add(scrollPane_4);
 		
 		table_4 = new JTable();
