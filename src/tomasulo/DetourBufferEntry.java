@@ -1,5 +1,6 @@
 package tomasulo;
 
+// COMENTAR!
 public class DetourBufferEntry {
 	public int destPC;
 	public int bitPredictor;

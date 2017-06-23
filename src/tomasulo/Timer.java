@@ -2,8 +2,10 @@ package tomasulo;
 import java.time.Duration;
 import java.time.Instant;
 
+// Timer simples. Serve apenas para a contagem de clocks
 public abstract class Timer
 {
+	// Define a taxa dos clocks
 	public static final double CLOCKS_PER_SEC = 20;
 	
 	private static Instant _referencia = null;
@@ -14,6 +16,7 @@ public abstract class Timer
 		_referencia = Instant.now();
 	}
 	
+	// Tempo decorrido desde a referência (em clocks)
 	public static int tempoDecorrido()
 	{
 		if (_referencia == null)

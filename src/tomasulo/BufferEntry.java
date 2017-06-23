@@ -1,4 +1,7 @@
 package tomasulo;
+
+// Apenas um elemento do Buffer de Reordenação
+// Funciona como struct
 public class BufferEntry {
 	
 	public int id;
