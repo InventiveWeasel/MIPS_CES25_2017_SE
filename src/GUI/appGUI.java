@@ -37,16 +37,31 @@ public class appGUI extends JFrame {
 	 * Launch the application.
 	 */
 	public static void main(String[] args) {
+		appGUI frame = new appGUI();
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					appGUI frame = new appGUI();
+					
 					frame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
 			}
 		});
+		for(int i=0; i < 100; i++){
+			frame.updateExecTable(new String[][] {
+				{"Clock Corrente:", Integer.toString(i)},
+				{"PC:", "?"},
+				{"N\u00FAmero de Instru\u00E7\u00F5es Conclu\u00EDdas:", "?"},
+				{"Clock por Instru\u00E7\u00E3o (CPI)", "?"}
+				});
+			try {
+				Thread.sleep(500);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 	}
 
 	/**
@@ -225,5 +240,50 @@ public class appGUI extends JFrame {
 			}
 		));
 		scrollPane_4.setViewportView(table_4);
+	}
+	
+	public void updateExecTable(String[][] exec){
+		table_2.setModel(new DefaultTableModel(
+				exec,
+				
+		new String[] {
+						"Grandeza", "Valor"
+					}));
+	}
+	
+	public void updateResStatTable(String[][] resStat){
+		table.setModel(new DefaultTableModel(
+				resStat,
+				new String[] {
+						"ID", "Tipo", "Busy", "Instru\u00E7\u00E3o", "Dest", "Vj", "Vk", "Qj", "Qk", "A"
+					}
+				));
+	}
+	
+	public void updateRegsTable(String[][] regs){
+		table_4.setModel(new DefaultTableModel(
+				regs,
+				new String[] {
+						"", "Qi", "Vi", "", "Qi", "Vi", "", "Qi", "Vi", "", "Qi", "Vi"
+					}
+				));
+	}
+	
+	public void updateReordBufTable(String[][] buf){
+		table_3.setModel(new DefaultTableModel(
+				buf,
+				new String[] {
+						"Entrada", "Ocupado", "Instru\u00E7\u00E3o", "Estado", "Destino", "Valor"
+					}
+				));
+	}
+	
+	public void updateRecUsedMemTable(String[][] mem){
+		table_1.setModel(new DefaultTableModel(
+				mem,
+				new String[] {
+						"Endere\u00E7o", "Valor"
+					}
+				));
 	}
 }
