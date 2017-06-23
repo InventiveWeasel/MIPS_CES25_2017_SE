@@ -1,4 +1,5 @@
 package tomasulo;
+import GUI.appGUI;
 import java.util.ArrayList;
 
 public class Tomasulo {
@@ -12,14 +13,21 @@ public class Tomasulo {
 	private BufferEntry[] ROB;
 	private ReserveStationEntry[] RS;
 	private DetourBufferEntry[] detourBuffer;
+	public String[][] RSMatrix;
+	public String[][] ROBMatrix;
+	public String[][] RegisterStatMatrix;
+	public String[][] ExecutionDataMatrix;
+	public String[][] RecentUsedMemoryMatrix;
 	
 	private int[] dataMemory;
 	private ArrayList<String> instMemory;
 	private int instCount;
 	private int pc;
 	private int predictionType;
+	private appGUI gui;
 	
-	public Tomasulo(ArrayList<String> instructions, int type){
+	public Tomasulo(ArrayList<String> instructions, int type, appGUI frame){
+		gui = frame; 
 		predictionType = type;
 		
 		RegisterStat = new Register[REGSIZE];
@@ -39,14 +47,86 @@ public class Tomasulo {
 			RS[i] = new ReserveStationEntry(i, "Mult");
 		
 		detourBuffer = new DetourBufferEntry[MEMORYSIZE];
-		//for (int i = 0; i < REGSIZE; i++)
-		//	RegisterStat[i] = new Register(i);
-			
+		for (int i = 0; i < MEMORYSIZE; i++)
+			detourBuffer[i] = new DetourBufferEntry();
+		
+		ROBMatrix = new String[ROBSIZE][6];
+		RegisterStatMatrix = new String[8][12];
+		RSMatrix = new String[RSSIZE][10];
+		ExecutionDataMatrix = new String[4][2];
+		RecentUsedMemoryMatrix = new String[4][2];
+		
+		ExecutionDataMatrix[0][0] = "Clock Corrente";
+		ExecutionDataMatrix[1][0] = "PC";
+		ExecutionDataMatrix[2][0] =	"Número de Instruções Contadas";
+		ExecutionDataMatrix[3][0] = "Clock por Instrução (CPI)";
+		
 		dataMemory = new int[MEMORYSIZE];
 		instMemory = instructions;
 		
 		instCount = 0;
 		pc = 0;
+	}
+	
+	public void updateTables(){
+		//Update RSMatrix
+		for(int i=1; i < RSSIZE; i++){
+			RSMatrix[i][0] = "ER" + i;
+			RSMatrix[i][1] = RS[i].type;
+			RSMatrix[i][2] = RS[i].busy ? "Sim" : "Não";
+			RSMatrix[i][3] = RS[i].instruction;
+			RSMatrix[i][4] = "#" + RS[i].dest;
+			RSMatrix[i][5] = "" + RS[i].vj;
+			RSMatrix[i][6] = "" + RS[i].vk;
+			RSMatrix[i][7] = "#" + RS[i].qj;
+			RSMatrix[i][8] = "#" + RS[i].qk;
+			RSMatrix[i][9] = "" + RS[i].a;
+		}
+		
+		gui.updateResStatTable(RSMatrix);
+		
+		for(int i=1; i< ROBSIZE; i++){
+			ROBMatrix[i][0] = "" + ROB[i].id;
+			ROBMatrix[i][1] = ROB[i].busy ? "Sim" : "Não";
+			ROBMatrix[i][2] = ROB[i].instruction + " " + ROB[i].inst_param;
+			ROBMatrix[i][3] = "R" + ROB[i].dest;
+			ROBMatrix[i][4] = "" + ROB[i].value;
+		}
+		
+		gui.updateReordBufTable(ROBMatrix);
+		
+		for(int i=0; i < 8; i++){
+			RegisterStatMatrix[i][0] = "R" + i;
+			RegisterStatMatrix[i][3] = "R" + i + 8;
+			RegisterStatMatrix[i][6] = "R" + i + 16;
+			RegisterStatMatrix[i][9] = "R" + i + 2;
+			RegisterStatMatrix[i][1] = "#" + RegisterStat[i].reorder;
+			RegisterStatMatrix[i][2] = "" + RegisterStat[i].value;	
+			RegisterStatMatrix[i][4] = "#" + RegisterStat[i+8].reorder;
+			RegisterStatMatrix[i][7] = "#" + RegisterStat[i+16].reorder;
+			RegisterStatMatrix[i][10] = "#" + RegisterStat[i+24].reorder;
+			RegisterStatMatrix[i][5] = "" + RegisterStat[i+8].value;
+			RegisterStatMatrix[i][8] = "" + RegisterStat[i+16].value;
+			RegisterStatMatrix[i][11] = "" + RegisterStat[i+24].value;
+		}
+		
+		gui.updateRegsTable(RegisterStatMatrix);
+		
+		ExecutionDataMatrix[0][1] = "" + Timer.tempoDecorrido();
+		ExecutionDataMatrix[1][1] =	"" + pc;
+		ExecutionDataMatrix[2][1] =	"" + instCount;
+		if(Timer.tempoDecorrido() == 0)
+			ExecutionDataMatrix[3][1] = ""; 
+		else
+			ExecutionDataMatrix[3][1] =	"" + instCount/Timer.tempoDecorrido();
+		
+		gui.updateExecTable(ExecutionDataMatrix);
+		
+		/*RecentUsedMemoryMatrix[3][0] = RecentUsedMemoryMatrix[2][0];
+		RecentUsedMemoryMatrix[2][0] = RecentUsedMemoryMatrix[1][0];
+		RecentUsedMemoryMatrix[1][0] = RecentUsedMemoryMatrix[0][0];
+		RecentUsedMemoryMatrix[0][0] = ;*/
+		
 	}
 	
 	public void run(){
@@ -60,6 +140,7 @@ public class Tomasulo {
 			store();
 			execute();
 			issue();
+			updateTables();
 			
 			int end = Timer.tempoDecorrido();
 			
@@ -365,11 +446,7 @@ public class Tomasulo {
 		if (dest >= 0 && RegisterStat[dest].reorder == h)
 			RegisterStat[dest].busy = false;
 	}
-	
-	private boolean isFirstLoad(int dest) {
-		return false;
-	}
-	
+		
 	private int nextReserveStationEntry(String type){
 		for (int i = 1; i < RSSIZE; i++){
 			ReserveStationEntry entry = RS[i];

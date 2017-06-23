@@ -14,23 +14,16 @@ public class MIPS {
 	private int[][] dataMemory = new int[4096][32];
 	private ArrayList<String> instMemory = new ArrayList<String>();
 	private String BENCHMARK="benchmark.txt";
-	
+	appGUI frame;
 	public void run(){
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					appGUI frame = new appGUI();
-					frame.setVisible(true);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		});
+		frame = new appGUI();
+		frame.setVisible(true);
 		
 		try {
-			bufferInsts();
-			Tomasulo tomas = new Tomasulo(instMemory, 1);
+			bufferInsts();	
+			Tomasulo tomas = new Tomasulo(instMemory, 1, frame);
 			tomas.run();
+			
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
