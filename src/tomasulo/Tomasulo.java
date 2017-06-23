@@ -37,6 +37,9 @@ public class Tomasulo {
 	// Program Counter
 	private int pc;
 	
+	// COMENTAR
+	private int loadStep2 = -1;
+	
 	// Tipo de predição:
 	// 1: COMENTAR
 	// 2: COMENTAR
@@ -381,8 +384,7 @@ public class Tomasulo {
 	}
 
 	private void execute(){
-		// COMENTAR
-		int loadStep2 = -1;
+		boolean loadStep2Free = (loadStep2 == -1);
 		
 		// Analisar a situação para cada elemento da Estação
 		// de Reserva
@@ -433,13 +435,13 @@ public class Tomasulo {
 				// COMENTAR
 				if (RS[r].instruction.equals("lw")){
 					// Ainda na primeira etapa
-					if (RS[r].time > 1){
-						if (--RS[r].time == 1)
+					if (RS[r].time > 2){
+						if (--RS[r].time == 2)
 							RS[r].a = RS[r].vj + RS[r].a;
 					}
 					
 					// Aguardando segunda etapa iniciar
-					else if (RS[r].time == 1){
+					else if (RS[r].time == 2 && loadStep2Free){
 						if (noStoresBeforeWithAddress(h, RS[r].a)){
 							if (loadStep2 != -1){
 								int b = RS[loadStep2].dest;
@@ -449,9 +451,6 @@ public class Tomasulo {
 							else loadStep2 = r;
 						}
 					}
-					
-					// Durante segunda etapa
-					else RS[r].time--;
 				}
 				
 				// Instruções diferentes de "lw"
@@ -509,9 +508,12 @@ public class Tomasulo {
 		// Segunda etapa do load
 		if (loadStep2 != -1){
 			int r = loadStep2;
-			int a = RS[r].a;
-			RS[r].time--;
-			RS[r].result = dataMemory[a];
+			
+			if (--RS[r].time == 0){
+				int a = RS[r].a;
+				RS[r].result = dataMemory[a];
+				loadStep2 = -1;
+			}
 		}
 	}
 

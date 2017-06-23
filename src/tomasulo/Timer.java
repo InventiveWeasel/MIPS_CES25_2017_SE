@@ -4,7 +4,7 @@ import java.time.Instant;
 
 public abstract class Timer
 {
-	public static final double CLOCKS_PER_SEC = 10;
+	public static final double CLOCKS_PER_SEC = 20;
 	
 	private static Instant _referencia = null;
 	
