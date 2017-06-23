@@ -46,8 +46,8 @@ public class Tomasulo {
 		for (int i = 9; i < RSSIZE; i++) // 3
 			RS[i] = new ReserveStationEntry(i, "Mult");
 		
-		detourBuffer = new DetourBufferEntry[MEMORYSIZE];
-		for (int i = 0; i < MEMORYSIZE; i++)
+		detourBuffer = new DetourBufferEntry[instructions.size()];
+		for (int i = 0; i < instructions.size(); i++)
 			detourBuffer[i] = new DetourBufferEntry();
 		
 		ROBMatrix = new String[ROBSIZE-1][6];
@@ -152,17 +152,11 @@ public class Tomasulo {
 		}
 	}
 	
-	private void makeDetour(int type){
+	private void makeDetour(){
 		int pcAux = pc;
-		if(type == 1) //Detour que sempre supõe que segue
+		if(predictionType == 1) //Detour que sempre supõe que segue
 			pc += 1;
-		else if(type == 2){
-			if(detourBuffer[pc].destPC == -1)
-				pc += 1;
-			else
-				pc = detourBuffer[pc].destPC;
-		}
-		else if(type == 3) //Detour dinâmico de 1 bit
+		else if(predictionType == 3) //Detour dinâmico de 1 bit
 		{
 			//Padronizando 0 como seguir
 			if(detourBuffer[pc].bitPredictor == 0)
@@ -175,7 +169,7 @@ public class Tomasulo {
 			}
 			detourBuffer[pcAux].destPC = pc;
 		}
-		else if(type == 4){
+		else if(predictionType == 4){
 			if(detourBuffer[pc].bitPredictor == 1 || detourBuffer[pc].bitPredictor == 10)
 				pc += 1;
 			else{
@@ -285,8 +279,8 @@ public class Tomasulo {
 		instCount++;
 		
 		// Alteração no seguimento do programa, makeDetour faz a análise baseada no que houve no último ciclo do programa		
-		if (type == 'I' && (name.equals("beq") || name.equals("ble") || name.equals("bne")))
-			makeDetour(predictionType);
+		if (name.equals("beq") || name.equals("ble") || name.equals("bne"))
+			makeDetour();
 		else
 			pc++;
 	}
@@ -464,8 +458,10 @@ public class Tomasulo {
 			// Como verificar se o branch foi mispredicted?
 			
 			if (detourBuffer[ROB[h].pc].destPC != ROB[h].value){
+				System.out.println("ERRRRRRROUUUU\n");
 				pc = ROB[h].value; // fetch PC
-				detourBuffer[ROB[h].pc].destPC = ROB[h].value;
+				if(predictionType == 3 || predictionType == 4)
+					detourBuffer[ROB[h].pc].destPC = ROB[h].value;
 				
 				if(predictionType == 3){
 					if(detourBuffer[ROB[h].pc].bitPredictor == 0)
