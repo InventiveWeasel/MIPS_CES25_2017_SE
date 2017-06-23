@@ -459,7 +459,9 @@ public class Tomasulo {
 			
 			if (detourBuffer[ROB[h].pc].destPC != ROB[h].value){
 				System.out.println("ERRRRRRROUUUU\n");
+				
 				pc = ROB[h].value; // fetch PC
+				
 				if(predictionType == 3 || predictionType == 4)
 					detourBuffer[ROB[h].pc].destPC = ROB[h].value;
 				
@@ -469,6 +471,7 @@ public class Tomasulo {
 					else
 						detourBuffer[ROB[h].pc].bitPredictor = 0;
 				}
+				
 				else if (predictionType == 4){
 					switch(detourBuffer[ROB[h].pc].bitPredictor){
 					case 11:
