@@ -4,28 +4,49 @@ import java.util.ArrayList;
 
 public class Tomasulo {
 	
+	// Constantes para encapsular o tamanho de algumas estruturas.
+	// ROB e RS utilizarão apenas os índices de 1 a 10 e de 1 a 11,
+	// respectivamente
 	private final int REGSIZE = 32;
 	private final int ROBSIZE = 1 + 10; // id 0 nao utilizado
 	private final int RSSIZE = 1 + 11; // id 0 nao utilizado
 	private final int MEMORYSIZE = 4096;
 	
+	// Vetor de estados dos registradores (indexados de 0 a 31)
 	private Register[] RegisterStat;
+	// Buffer de Reordenação
 	private BufferEntry[] ROB;
+	// Estações de Reserva
 	private ReserveStationEntry[] RS;
+	// Vetor com informações relevantes para as previsões de desvio
 	private DetourBufferEntry[] detourBuffer;
-	public String[][] RSMatrix;
-	public String[][] ROBMatrix;
-	public String[][] RegisterStatMatrix;
-	public String[][] ExecutionDataMatrix;
-	public String[][] RecentUsedMemoryMatrix;
 	
+	// Matrizes de output passadas para a interface gráfica
+	private String[][] RSMatrix;
+	private String[][] ROBMatrix;
+	private String[][] RegisterStatMatrix;
+	private String[][] ExecutionDataMatrix;
+	private String[][] RecentUsedMemoryMatrix;
+	
+	// Memória de dados (4096 posições)
 	private int[] dataMemory;
+	// Memória de instruções
 	private ArrayList<String> instMemory;
+	// COMENTAR
 	private int instCount;
+	// Program Counter
 	private int pc;
+	
+	// Tipo de predição:
+	// 1: COMENTAR
+	// 2: COMENTAR
+	// 3: COMENTAR
 	private int predictionType;
+	
+	//Referência para objeto responsável pela interface gráfica
 	private appGUI gui;
 	
+	// Construtor: apenas inicializa e declara algumas variávels
 	public Tomasulo(ArrayList<String> instructions, int type, appGUI frame){
 		gui = frame; 
 		predictionType = type;
@@ -38,6 +59,8 @@ public class Tomasulo {
 		for (int i = 1; i < ROBSIZE; i++)
 			ROB[i] = new BufferEntry(i);
 		
+		// A Estação de Reserva contém 5 campos Load/Store,
+		// 3 campos Add e 3 campos Mult
 		RS = new ReserveStationEntry[RSSIZE];
 		for (int i = 1; i <= 5; i++) // 5
 			RS[i] = new ReserveStationEntry(i, "Load/Store");
@@ -46,6 +69,7 @@ public class Tomasulo {
 		for (int i = 9; i < RSSIZE; i++) // 3
 			RS[i] = new ReserveStationEntry(i, "Mult");
 		
+		// COMENTAR
 		detourBuffer = new DetourBufferEntry[instructions.size()];
 		for (int i = 0; i < instructions.size(); i++)
 			detourBuffer[i] = new DetourBufferEntry();
@@ -56,6 +80,7 @@ public class Tomasulo {
 		ExecutionDataMatrix = new String[4][2];
 		RecentUsedMemoryMatrix = new String[4][2];
 		
+		// Campos estáticos da matriz de output
 		ExecutionDataMatrix[0][0] = "Clock Corrente";
 		ExecutionDataMatrix[1][0] = "PC";
 		ExecutionDataMatrix[2][0] =	"Número de Instruções Contadas";
@@ -68,6 +93,7 @@ public class Tomasulo {
 		pc = 0;
 	}
 	
+	// Método utilizado apenas para formatação do output
 	private String outputFormat(int n){
 		if (n == -1)
 			return "";
@@ -75,6 +101,7 @@ public class Tomasulo {
 			return "" + n;
 	}
 	
+	// Quando chamado, este método atualiza as tabelas de output
 	private void updateTables(){
 		//Update RSMatrix
 		for(int i=1; i < RSSIZE; i++){
@@ -137,28 +164,49 @@ public class Tomasulo {
 		
 	}
 	
+	// Verifica se o programa já foi encerrado. Condições:
+	// 1. PC deve estar em um endereço de instrução inválido
+	// 2. Todas as tarefas no Buffer de Reordenação foram encerradas
+	private boolean finished(){
+		if (pc < instMemory.size())
+			return false;
+		
+		for (int b = 1; b < ROBSIZE; b++)
+			if (!ROB[b].state.isEmpty() && !ROB[b].state.equals("Commit"))
+				return false;
+		
+		return true;
+	}
+	
+	// Aqui roda o loop principal do programa
 	public void run(){
+		// Reinicia contador de clocks
 		Timer.reiniciarContador();
 		updateTables();
 		
-		while (true){
+		while (!finished()){
 			int start = Timer.tempoDecorrido();
 			int end = Timer.tempoDecorrido();
 			
+			// Espera 1 clock do Timer antes de avançar
 			while(end - start < 1){
 				end = Timer.tempoDecorrido();
 			}
 			
+			// As fases do algoritmo são executadas em ordem contrária,
+			// pois assim evita-se que uma instrução consiga passar por mais
+			// de uma etapa num mesmo ciclo de clock
 			consolidate();
 			store();
 			execute();
 			if (pc < instMemory.size())
 				issue();
+			
 			updateTables();
-
 		}
 	}
-	
+
+	// COMENTAR
 	private void makeDetour(){
 		int pcAux = pc;
 		if(predictionType == 1) //Detour que sempre supõe que segue
@@ -190,29 +238,37 @@ public class Tomasulo {
 	}
 	
 	private void issue(){
-		
 		String inst = instMemory.get(pc);
+		// instInfo contém diversas informações a respeito da
+		// instrução, como: nome, tipo, parâmetros, etc
 		ArrayList<Object> instInfo = Instructions.getInfo(inst);
 		
-		Character type = (Character)instInfo.get(0);
-		String name = (String)instInfo.get(1);
-		String param = (String)instInfo.get(2);
-		String category = (String)instInfo.get(3);
-		Integer immediate = (Integer)instInfo.get(4);
-		Integer address = (Integer)instInfo.get(5);
-		Integer rd = (Integer)instInfo.get(6);
-		Integer rs = (Integer)instInfo.get(7);
-		Integer rt = (Integer)instInfo.get(8);
+		// Nem todos os campos estarão preenchidos para algumas
+		// instruções (conterão null)
+		Character type = (Character)instInfo.get(0); // R, I ou J
+		String name = (String)instInfo.get(1); // nome
+		String param = (String)instInfo.get(2); // parâmetros
+		String category = (String)instInfo.get(3); // Load/Store, Add ou Mult
+		Integer immediate = (Integer)instInfo.get(4); // valor imediato
+		Integer address = (Integer)instInfo.get(5); // endereço
+		Integer rd = (Integer)instInfo.get(6); // rd
+		Integer rs = (Integer)instInfo.get(7); // rs
+		Integer rt = (Integer)instInfo.get(8); // rt
 		
+		// Em caso de jmp, basta atualizar o pc
 		if (type == 'J'){
 			pc = address;
 			return;
 		}
 		
+		// Obtém o próximo campo disponível no Buffer de Reordenação.
+		// Retorna -1 se estiver cheio
 		int b = nextBufferEntry();
 		if (b < 0)
 			return;
 		
+		// Obtém o próximo campo disponível na Estação de Reserva.
+		// Retorna -1 se estiver cheia
 		int r = nextReserveStationEntry(category);
 		if (r < 0)
 			return;
@@ -220,21 +276,32 @@ public class Tomasulo {
 		RS[r].clear();
 		ROB[b].clear();
 		
+		// ANÁLISE DO REGISTRADOR RS ============================
+		// Se rs estiver ocupado
 		if (RegisterStat[rs].busy){
 			int h = RegisterStat[rs].reorder;
 			
+			// Sendo otimistas, podemos encontrar o valor desejado
+			// no Buffer de Reordenação caso o estado "Write" já
+			// tenha sido alcançado
 			if (ROB[h].state.equals("Write")){
 				RS[r].vj = ROB[h].value;
 				RS[r].qj = 0;
 			}
+			// No pior caso, resta apenas registrar a dependência
 			else
 				RS[r].qj = h;
 		}
+		
+		// Se rs estiver livre, já temos o valor desejado
 		else{
 			RS[r].vj = RegisterStat[rs].value;
 			RS[r].qj = 0;
 		}
+		// ======================================================
 		
+		// ANÁLISE DO REGISTRADOR RT ============================
+		// Funciona de maneira análoga ao registrador rs
 		if (RegisterStat[rt].busy){
 			int h = RegisterStat[rt].reorder;
 			
@@ -245,15 +312,19 @@ public class Tomasulo {
 			else
 				RS[r].qk = h;
 		}
+		
 		else{
 			RS[r].vk = RegisterStat[rt].value;
 			RS[r].qk = 0;
 		}
+		// ======================================================
 		
+		// Atualizar os campos na Estação de Reserva
 		RS[r].busy = true;
 		RS[r].dest = b;
 		RS[r].instruction = name;
 		
+		// Atualizar os campos no Buffer de Reordenação
 		ROB[b].instruction = name;
 		ROB[b].inst_param = param;
 		ROB[b].state = "Issue";
@@ -261,20 +332,34 @@ public class Tomasulo {
 		ROB[b].pc = pc;
 		ROB[b].busy = true;
 		
+		// Se tivermos uma instrução do tipo R, sabemos que
+		// o resultado final será armazenado em rd
 		if (type == 'R'){
+			// Atualizar registrador rd
 			RegisterStat[rd].reorder = b;
 			RegisterStat[rd].busy = true;
+			// Guardar destino no Buffer de Reordenação
 			ROB[b].dest = rd;
 		}
-		else if (type == 'I')
+		
+		// Se tivermos uma instrução do tipo I, o valor
+		// imediato precisa ser armazenado
+		else if (type == 'I'){
 			RS[r].a = immediate;
 		
-		if (name.equals("lw") || name.equals("addi")){
-			RegisterStat[rt].reorder = b;
-			RegisterStat[rt].busy = true;
-			ROB[b].dest = rt;
+			// Para as instruções "lw" e "addi", rt é
+			// será destino do resultado
+			if (name.equals("lw") || name.equals("addi")){
+				// Atualizar registrador rt
+				RegisterStat[rt].reorder = b;
+				RegisterStat[rt].busy = true;
+				// Guardar destino no Buffer de Reordenação
+				ROB[b].dest = rt;
+			}
 		}
 		
+		// É necessário setar o tempo necessário para executar
+		// cada instrução
 		if (name.equals("lw"))
 			RS[r].time = 4;
 		else if (name.equals("sw"))
@@ -284,9 +369,11 @@ public class Tomasulo {
 		else
 			RS[r].time = 1;
 		
+		// COMENTAR
 		instCount++;
 		
-		// Alteração no seguimento do programa, makeDetour faz a análise baseada no que houve no último ciclo do programa		
+		// Em caso de alteração no seguimento do programa, makeDetour faz a
+		// análise baseada no que houve no último ciclo do programa		
 		if (name.equals("beq") || name.equals("ble") || name.equals("bne"))
 			makeDetour();
 		else
