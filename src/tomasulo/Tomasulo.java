@@ -89,8 +89,9 @@ public class Tomasulo {
 			ROBMatrix[i][0] = "" + ROB[i].id;
 			ROBMatrix[i][1] = ROB[i].busy ? "Sim" : "Não";
 			ROBMatrix[i][2] = ROB[i].instruction + " " + ROB[i].inst_param;
-			ROBMatrix[i][3] = "R" + ROB[i].dest;
-			ROBMatrix[i][4] = "" + ROB[i].value;
+			ROBMatrix[i][3] = ROB[i].state;
+			ROBMatrix[i][4] = "R" + ROB[i].dest;
+			ROBMatrix[i][5] = "" + ROB[i].value;
 		}
 		
 		gui.updateReordBufTable(ROBMatrix);
@@ -131,23 +132,22 @@ public class Tomasulo {
 	
 	public void run(){
 		Timer.reiniciarContador();
+		updateTables();
 		
 		while (true){
 			int start = Timer.tempoDecorrido();
-			
-			consolidate();
-			execute();
-			store();
-			execute();
-			if (pc < instMemory.size())
-				issue();
-			updateTables();
-			
 			int end = Timer.tempoDecorrido();
 			
 			while(end - start < 1){
 				end = Timer.tempoDecorrido();
 			}
+			
+			consolidate();
+			store();
+			execute();
+			if (pc < instMemory.size())
+				issue();
+			updateTables();
 		}
 	}
 	
@@ -252,14 +252,17 @@ public class Tomasulo {
 		ROB[b].state = "Issue";
 		ROB[b].id = instCount + 1;
 		ROB[b].pc = pc;
+		ROB[b].busy = true;
 		
 		if (type == 'R'){
 			RegisterStat[rd].reorder = b;
 			RegisterStat[rd].busy = true;
 			ROB[b].dest = rd;
 		}
-		else if (type == 'I')
+		else if (type == 'I'){
 			RS[r].a = immediate;
+			ROB[b].dest = rt;
+		}
 		
 		if (name.equals("lw")){
 			RS[r].time = 4;
@@ -270,7 +273,7 @@ public class Tomasulo {
 		else if (name.equals("sw")){
 			RS[r].time = 4;
 		}
-		else if (name.equals("mult"))
+		else if (name.equals("mul"))
 			RS[r].time = 3;
 		else
 			RS[r].time = 1;
@@ -284,7 +287,6 @@ public class Tomasulo {
 			pc++;
 	}
 
-	// NAO TERMINADO
 	private void execute(){
 		int loadStep2 = -1;
 		
@@ -352,26 +354,29 @@ public class Tomasulo {
 					else if (RS[r].instruction.equals("mul"))
 						RS[r].result = RS[r].vj * RS[r].vk;
 					
+					else if (RS[r].instruction.equals("addi"))
+						RS[r].result = RS[r].vj + RS[r].a;
+					
 					else if (RS[r].instruction.equals("sw"))
 						ROB[h].a = RS[r].vj + RS[r].a;
 					
 					else if (RS[r].instruction.equals("beq"))
 						if (RS[r].vj == RS[r].vk)
-							ROB[h].value = ROB[h].pc + RS[r].a / 4 + 1;
+							RS[r].result = ROB[h].pc + RS[r].a / 4 + 1;
 						else
-							ROB[h].value = ROB[h].pc + 1;
+							RS[r].result = ROB[h].pc + 1;
 					
 					else if (RS[r].instruction.equals("ble"))
 						if (RS[r].vj <= RS[r].vk)
-							ROB[h].value = RS[r].a / 4;
+							RS[r].result = RS[r].a / 4;
 						else
-							ROB[h].value = ROB[h].pc + 1;
+							RS[r].result = ROB[h].pc + 1;
 					
 					else if (RS[r].instruction.equals("bne"))
 						if (RS[r].vj != RS[r].vk)
-							ROB[h].value = ROB[h].pc + RS[r].a / 4 + 1;
+							RS[r].result = ROB[h].pc + RS[r].a / 4 + 1;
 						else
-							ROB[h].value = ROB[h].pc + 1;
+							RS[r].result = ROB[h].pc + 1;
 				}
 				
 			}
@@ -401,6 +406,7 @@ public class Tomasulo {
 				if (RS[r].qk == 0){
 					ROB[h].value = RS[r].vk;
 					ROB[h].state = "Write";
+					RS[r].busy = false;
 				}
 			}
 			
@@ -433,16 +439,26 @@ public class Tomasulo {
 			}
 			
 			ROB[h].value = RS[r].result;
+			ROB[h].state = "Write";
 		}
 	}
 	
 	private void consolidate(){
-		int h = 1;
+		int h = -1;
 		
-		for (int i = 2; i < ROBSIZE; i++){
-			if (ROB[i].id < ROB[h].id)
-				h = i;
+		for (int i = 1; i < ROBSIZE; i++){
+			if (!ROB[i].busy)
+				continue;
+			
+			if (h != -1){
+				if (ROB[i].id < ROB[h].id)
+					h = i;
+			}
+			else h = i;
 		}
+		
+		if (h < 0)
+			return;
 		
 		if (!ROB[h].state.equals("Write"))
 			return;
@@ -512,6 +528,7 @@ public class Tomasulo {
 			RegisterStat[dest].value = ROB[h].value;
 		
 		ROB[h].busy = false;
+		ROB[h].state = "Commit";
 		if (dest >= 0 && RegisterStat[dest].reorder == h)
 			RegisterStat[dest].busy = false;
 	}
@@ -528,7 +545,8 @@ public class Tomasulo {
 		for (int b = 1; b < ROBSIZE; b++)
 			if (ROB[b].a == a &&
 				ROB[b].id < ROB[l].id &&
-				ROB[b].instruction.equals("sw"))
+				ROB[b].instruction.equals("sw") &&
+				ROB[b].busy)
 				return false;
 		
 		return true;
