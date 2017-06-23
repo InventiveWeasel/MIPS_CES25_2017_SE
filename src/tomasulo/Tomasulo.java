@@ -37,7 +37,8 @@ public class Tomasulo {
 	// Program Counter
 	private int pc;
 	
-	// COMENTAR
+	// Guarda o índice das Estações de Reserva da única
+	// instrução "lw" que está na segunda etapa de sua execução
 	private int loadStep2 = -1;
 	
 	// Tipo de predição:
@@ -384,6 +385,8 @@ public class Tomasulo {
 	}
 
 	private void execute(){
+		// Verifica inicialmente se a segunda etapa da instrução
+		// "lw" já não está sendo executada
 		boolean loadStep2Free = (loadStep2 == -1);
 		
 		// Analisar a situação para cada elemento da Estação
@@ -432,19 +435,27 @@ public class Tomasulo {
 			// Caso já tenhamos iniciado a execução
 			if (ROB[h].state.equals("Execute")){
 				
-				// COMENTAR
+				// Instruções "lw" se dividem em duas etapas, ambas
+				// de 2 clocks de duração. Por uma limitação de hardware,
+				// duas instruções não podem estar executando a segunda
+				// etapa simultaneamente 
 				if (RS[r].instruction.equals("lw")){
 					// Ainda na primeira etapa
 					if (RS[r].time > 2){
+						// Executar primeira etapa se contador chegar a 2
 						if (--RS[r].time == 2)
 							RS[r].a = RS[r].vj + RS[r].a;
 					}
 					
 					// Aguardando segunda etapa iniciar
 					else if (RS[r].time == 2 && loadStep2Free){
+						// É necessário que o endereço requisitado não
+						// esteja sujeito a um comando "sw" anterior
 						if (noStoresBeforeWithAddress(h, RS[r].a)){
 							if (loadStep2 != -1){
 								int b = RS[loadStep2].dest;
+								// Em caso de empate, prioriade é do mais
+								// mais antigo
 								if (h < b)
 									loadStep2 = r;
 							}
@@ -504,14 +515,17 @@ public class Tomasulo {
 			}
 		}
 		
-		// COMENTAR
-		// Segunda etapa do load
+		// loadStep2 != -1 se houver alguma instrução "lw" executando
+		// sua segunda etapa
 		if (loadStep2 != -1){
 			int r = loadStep2;
 			
+			// Se a etapa encerrar
 			if (--RS[r].time == 0){
 				int a = RS[r].a;
 				RS[r].result = dataMemory[a];
+				// Libera posição para outra instrução "lw" que queira
+				// executar sua segunda etapa
 				loadStep2 = -1;
 			}
 		}
