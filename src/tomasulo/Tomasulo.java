@@ -68,19 +68,26 @@ public class Tomasulo {
 		pc = 0;
 	}
 	
-	public void updateTables(){
+	private String outputFormat(int n){
+		if (n == -1)
+			return "";
+		else
+			return "" + n;
+	}
+	
+	private void updateTables(){
 		//Update RSMatrix
 		for(int i=1; i < RSSIZE; i++){
 			RSMatrix[i-1][0] = "ER" + i;
 			RSMatrix[i-1][1] = RS[i].type;
 			RSMatrix[i-1][2] = RS[i].busy ? "Sim" : "Não";
 			RSMatrix[i-1][3] = RS[i].instruction;
-			RSMatrix[i-1][4] = "#" + RS[i].dest;
-			RSMatrix[i-1][5] = "" + RS[i].vj;
-			RSMatrix[i-1][6] = "" + RS[i].vk;
-			RSMatrix[i-1][7] = "" + RS[i].qj;
-			RSMatrix[i-1][8] = "" + RS[i].qk;
-			RSMatrix[i-1][9] = "" + RS[i].a;
+			RSMatrix[i-1][4] = "#" + outputFormat(RS[i].dest);
+			RSMatrix[i-1][5] = outputFormat(RS[i].vj);
+			RSMatrix[i-1][6] = outputFormat(RS[i].vk);
+			RSMatrix[i-1][7] = outputFormat(RS[i].qj);
+			RSMatrix[i-1][8] = outputFormat(RS[i].qk);
+			RSMatrix[i-1][9] = outputFormat(RS[i].a);
 		}
 		
 		gui.updateResStatTable(RSMatrix);
@@ -90,8 +97,8 @@ public class Tomasulo {
 			ROBMatrix[i-1][1] = ROB[i].busy ? "Sim" : "Não";
 			ROBMatrix[i-1][2] = ROB[i].instruction + " " + ROB[i].inst_param;
 			ROBMatrix[i-1][3] = ROB[i].state;
-			ROBMatrix[i-1][4] = "R" + ROB[i].dest;
-			ROBMatrix[i-1][5] = "" + ROB[i].value;
+			ROBMatrix[i-1][4] = "R" + outputFormat(ROB[i].dest);
+			ROBMatrix[i-1][5] = outputFormat(ROB[i].value);
 		}
 		
 		gui.updateReordBufTable(ROBMatrix);
@@ -101,11 +108,11 @@ public class Tomasulo {
 			RegisterStatMatrix[i][3] = "R" + i + 8;
 			RegisterStatMatrix[i][6] = "R" + i + 16;
 			RegisterStatMatrix[i][9] = "R" + i + 2;
-			RegisterStatMatrix[i][1] = "#" + RegisterStat[i].reorder;
+			RegisterStatMatrix[i][1] = "#" + outputFormat(RegisterStat[i].reorder);
 			RegisterStatMatrix[i][2] = "" + RegisterStat[i].value;	
-			RegisterStatMatrix[i][4] = "#" + RegisterStat[i+8].reorder;
-			RegisterStatMatrix[i][7] = "#" + RegisterStat[i+16].reorder;
-			RegisterStatMatrix[i][10] = "#" + RegisterStat[i+24].reorder;
+			RegisterStatMatrix[i][4] = "#" + outputFormat(RegisterStat[i+8].reorder);
+			RegisterStatMatrix[i][7] = "#" + outputFormat(RegisterStat[i+16].reorder);
+			RegisterStatMatrix[i][10] = "#" + outputFormat(RegisterStat[i+24].reorder);
 			RegisterStatMatrix[i][5] = "" + RegisterStat[i+8].value;
 			RegisterStatMatrix[i][8] = "" + RegisterStat[i+16].value;
 			RegisterStatMatrix[i][11] = "" + RegisterStat[i+24].value;
