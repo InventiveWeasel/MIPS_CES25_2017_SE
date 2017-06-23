@@ -176,16 +176,16 @@ public class Tomasulo {
 			RegisterStat[rd].busy = true;
 			ROB[b].dest = rd;
 		}
+		else if (type == 'I')
+			RS[r].a = immediate;
 		
 		if (name.equals("lw")){
-			RS[r].a = immediate;
 			RS[r].time = 4;
 			RegisterStat[rt].reorder = b;
 			RegisterStat[rt].busy = true;
 			ROB[b].dest = rt;
 		}
 		else if (name.equals("sw")){
-			RS[r].a = immediate;
 			RS[r].time = 4;
 		}
 		else if (name.equals("mult"))
@@ -272,6 +272,24 @@ public class Tomasulo {
 					
 					else if (RS[r].instruction.equals("sw"))
 						ROB[h].a = RS[r].vj + RS[r].a;
+					
+					else if (RS[r].instruction.equals("beq"))
+						if (RS[r].vj == RS[r].vk)
+							ROB[h].value = ROB[h].pc + RS[r].a / 4 + 1;
+						else
+							ROB[h].value = ROB[h].pc + 1;
+					
+					else if (RS[r].instruction.equals("ble"))
+						if (RS[r].vj <= RS[r].vk)
+							ROB[h].value = RS[r].a / 4;
+						else
+							ROB[h].value = ROB[h].pc + 1;
+					
+					else if (RS[r].instruction.equals("bne"))
+						if (RS[r].vj != RS[r].vk)
+							ROB[h].value = ROB[h].pc + RS[r].a / 4 + 1;
+						else
+							ROB[h].value = ROB[h].pc + 1;
 				}
 				
 			}
