@@ -50,9 +50,9 @@ public class Tomasulo {
 		for (int i = 0; i < MEMORYSIZE; i++)
 			detourBuffer[i] = new DetourBufferEntry();
 		
-		ROBMatrix = new String[ROBSIZE][6];
+		ROBMatrix = new String[ROBSIZE-1][6];
 		RegisterStatMatrix = new String[8][12];
-		RSMatrix = new String[RSSIZE][10];
+		RSMatrix = new String[RSSIZE-1][10];
 		ExecutionDataMatrix = new String[4][2];
 		RecentUsedMemoryMatrix = new String[4][2];
 		
@@ -71,27 +71,27 @@ public class Tomasulo {
 	public void updateTables(){
 		//Update RSMatrix
 		for(int i=1; i < RSSIZE; i++){
-			RSMatrix[i][0] = "ER" + i;
-			RSMatrix[i][1] = RS[i].type;
-			RSMatrix[i][2] = RS[i].busy ? "Sim" : "Não";
-			RSMatrix[i][3] = RS[i].instruction;
-			RSMatrix[i][4] = "#" + RS[i].dest;
-			RSMatrix[i][5] = "" + RS[i].vj;
-			RSMatrix[i][6] = "" + RS[i].vk;
-			RSMatrix[i][7] = "#" + RS[i].qj;
-			RSMatrix[i][8] = "#" + RS[i].qk;
-			RSMatrix[i][9] = "" + RS[i].a;
+			RSMatrix[i-1][0] = "ER" + i;
+			RSMatrix[i-1][1] = RS[i].type;
+			RSMatrix[i-1][2] = RS[i].busy ? "Sim" : "Não";
+			RSMatrix[i-1][3] = RS[i].instruction;
+			RSMatrix[i-1][4] = "#" + RS[i].dest;
+			RSMatrix[i-1][5] = "" + RS[i].vj;
+			RSMatrix[i-1][6] = "" + RS[i].vk;
+			RSMatrix[i-1][7] = "" + RS[i].qj;
+			RSMatrix[i-1][8] = "" + RS[i].qk;
+			RSMatrix[i-1][9] = "" + RS[i].a;
 		}
 		
 		gui.updateResStatTable(RSMatrix);
 		
 		for(int i=1; i< ROBSIZE; i++){
-			ROBMatrix[i][0] = "" + ROB[i].id;
-			ROBMatrix[i][1] = ROB[i].busy ? "Sim" : "Não";
-			ROBMatrix[i][2] = ROB[i].instruction + " " + ROB[i].inst_param;
-			ROBMatrix[i][3] = ROB[i].state;
-			ROBMatrix[i][4] = "R" + ROB[i].dest;
-			ROBMatrix[i][5] = "" + ROB[i].value;
+			ROBMatrix[i-1][0] = "" + ROB[i].id;
+			ROBMatrix[i-1][1] = ROB[i].busy ? "Sim" : "Não";
+			ROBMatrix[i-1][2] = ROB[i].instruction + " " + ROB[i].inst_param;
+			ROBMatrix[i-1][3] = ROB[i].state;
+			ROBMatrix[i-1][4] = "R" + ROB[i].dest;
+			ROBMatrix[i-1][5] = "" + ROB[i].value;
 		}
 		
 		gui.updateReordBufTable(ROBMatrix);
@@ -148,6 +148,7 @@ public class Tomasulo {
 			if (pc < instMemory.size())
 				issue();
 			updateTables();
+
 		}
 	}
 	
@@ -202,6 +203,9 @@ public class Tomasulo {
 		Integer rs = (Integer)instInfo.get(7);
 		Integer rt = (Integer)instInfo.get(8);
 		
+		if (type == 'J')
+			pc = address;
+		
 		int b = nextBufferEntry();
 		if (b < 0)
 			return;
@@ -210,8 +214,8 @@ public class Tomasulo {
 		if (r < 0)
 			return;
 		
-		if (type == 'J')
-			pc = address;
+		RS[r].clear();
+		ROB[b].clear();
 		
 		if (RegisterStat[rs].busy){
 			int h = RegisterStat[rs].reorder;
@@ -222,7 +226,7 @@ public class Tomasulo {
 			}
 			else
 				RS[r].qj = h;
-		}	
+		}
 		else{
 			RS[r].vj = RegisterStat[rs].value;
 			RS[r].qj = 0;
@@ -444,18 +448,7 @@ public class Tomasulo {
 	}
 	
 	private void consolidate(){
-		int h = -1;
-		
-		for (int i = 1; i < ROBSIZE; i++){
-			if (!ROB[i].busy)
-				continue;
-			
-			if (h != -1){
-				if (ROB[i].id < ROB[h].id)
-					h = i;
-			}
-			else h = i;
-		}
+		int h = bufferHead();
 		
 		if (h < 0)
 			return;
@@ -500,6 +493,13 @@ public class Tomasulo {
 						for (int r = 1; r < RSSIZE; r++){
 							if (RS[r].dest == b)
 								RS[r].clear();
+						}
+						
+						for (int r = 0; r < REGSIZE; r++){
+							if (RegisterStat[r].reorder == b){
+								RegisterStat[r].busy = false;
+								RegisterStat[r].reorder = -1;
+							}
 						}
 					}
 				}
@@ -572,10 +572,18 @@ public class Tomasulo {
 	}
 
 	private int bufferHead(){
-		int head = 1;
-		for (int b = 2; b < ROBSIZE; b++)
-			if (ROB[b].id < ROB[head].id)
-				head = b;
+		int head = -1;
+		
+		for (int i = 1; i < ROBSIZE; i++){
+			if (!ROB[i].busy)
+				continue;
+			
+			if (head != -1){
+				if (ROB[i].id < ROB[head].id)
+					head = i;
+			}
+			else head = i;
+		}
 		
 		return head;
 	}
