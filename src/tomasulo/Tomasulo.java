@@ -113,6 +113,14 @@ public class Tomasulo {
 			return "" + n;
 	}
 	
+	// Método utilizado apenas para formatação do output
+	private String outputFormat2(int dest){
+		if (dest == -1)
+			return "";
+		else
+			return "#" + ROB[dest].id;
+	}
+	
 	// Quando chamado, este método atualiza as tabelas de output
 	private void updateTables(){
 		DecimalFormat df = new DecimalFormat("0.000");
@@ -123,7 +131,7 @@ public class Tomasulo {
 			RSMatrix[i-1][1] = RS[i].type;
 			RSMatrix[i-1][2] = RS[i].busy ? "Sim" : "Não";
 			RSMatrix[i-1][3] = RS[i].instruction;
-			RSMatrix[i-1][4] = "#" + outputFormat(RS[i].dest);
+			RSMatrix[i-1][4] = outputFormat2(RS[i].dest);
 			RSMatrix[i-1][5] = outputFormat(RS[i].vj);
 			RSMatrix[i-1][6] = outputFormat(RS[i].vk);
 			RSMatrix[i-1][7] = outputFormat(RS[i].qj);
@@ -146,14 +154,14 @@ public class Tomasulo {
 		
 		for(int i=0; i < 8; i++){
 			RegisterStatMatrix[i][0] = "R" + i;
-			RegisterStatMatrix[i][3] = "R" + i + 8;
-			RegisterStatMatrix[i][6] = "R" + i + 16;
-			RegisterStatMatrix[i][9] = "R" + i + 2;
-			RegisterStatMatrix[i][1] = "#" + outputFormat(RegisterStat[i].reorder);
+			RegisterStatMatrix[i][3] = "R" + (i + 8);
+			RegisterStatMatrix[i][6] = "R" + (i + 16);
+			RegisterStatMatrix[i][9] = "R" + (i + 2);
+			RegisterStatMatrix[i][1] = outputFormat2(RegisterStat[i].reorder);
 			RegisterStatMatrix[i][2] = "" + RegisterStat[i].value;	
-			RegisterStatMatrix[i][4] = "#" + outputFormat(RegisterStat[i+8].reorder);
-			RegisterStatMatrix[i][7] = "#" + outputFormat(RegisterStat[i+16].reorder);
-			RegisterStatMatrix[i][10] = "#" + outputFormat(RegisterStat[i+24].reorder);
+			RegisterStatMatrix[i][4] = outputFormat2(RegisterStat[i+8].reorder);
+			RegisterStatMatrix[i][7] = outputFormat2(RegisterStat[i+16].reorder);
+			RegisterStatMatrix[i][10] = outputFormat2(RegisterStat[i+24].reorder);
 			RegisterStatMatrix[i][5] = "" + RegisterStat[i+8].value;
 			RegisterStatMatrix[i][8] = "" + RegisterStat[i+16].value;
 			RegisterStatMatrix[i][11] = "" + RegisterStat[i+24].value;
@@ -723,6 +731,7 @@ public class Tomasulo {
 			RegisterStat[dest].busy = false;
 	}
 	
+	// FUNÇÕES AUXILIARES =======================================
 	private boolean noStoresBefore(int l){
 		for (int b = 1; b < ROBSIZE; b++)
 			if (ROB[b].id < ROB[l].id && ROB[b].instruction.equals("sw"))
@@ -777,4 +786,5 @@ public class Tomasulo {
 		
 		return head;
 	}
+	// ==========================================================
 }
