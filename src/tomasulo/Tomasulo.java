@@ -381,36 +381,56 @@ public class Tomasulo {
 	}
 
 	private void execute(){
+		// COMENTAR
 		int loadStep2 = -1;
 		
+		// Analisar a situação para cada elemento da Estação
+		// de Reserva
 		for (int r = 1; r < RSSIZE; r++){
+			// Se não estiver ocupado, não nos interessa
 			if (!RS[r].busy)
 				continue;
 			
+			// Podemos pular instruções cujo tempo de execução já
+			// já zerou (execução concluída)
+			if (RS[r].time <= 0)
+				continue;
+			
+			// h é o índice do elemento correspondente no Buffer de
+			// Reordenação
 			int h = RS[r].dest;
 			
-			if (ROB[h].state.equals("Issue")){
-				boolean startCondition = false;
+			// Caso ainda esteja no estado "Issue", a execução ainda
+			// não começou. Precisamos verificar se as condições
+			// para iniciá-la são satisfeitas (a primeira delas é que
+			// não exista mais dependência em qj)
+			if (ROB[h].state.equals("Issue") && RS[r].qj == 0){
+				boolean startCondition;
 				
+				// Em caso de "sw", a instrução precisa estar no primeiro
+				// elemento do Buffer de Reordenação
 				if (RS[r].instruction.equals("sw"))
-					startCondition = (h == bufferHead() && RS[r].qj == 0);
+					startCondition = (h == bufferHead());
 				
+				// Em caso de "lw", não pode haver instruções "sw" anteriores
+				// ainda não finalizadas
 				else if (RS[r].equals("lw"))
-					startCondition = (noStoresBefore(h) && RS[r].qj == 0);
+					startCondition = noStoresBefore(h);
 				
-				// FP op. (discutivel?)
+				// Suspeito. Além disso, qk para lw não parece definido,
+				// assim como rd para tipo R
+				// COMENTAR
 				else
-					startCondition = (RS[r].qj == 0 && RS[r].qk == 0);
+					startCondition = (RS[r].qk == 0);
 				
 				if (startCondition)
 					ROB[h].state = "Execute";
 			}
 			
-			if (RS[r].time <= 0)
-				continue;
-			
+			// Caso já tenhamos iniciado a execução
 			if (ROB[h].state.equals("Execute")){
 				
+				// COMENTAR
 				if (RS[r].instruction.equals("lw")){
 					// Ainda na primeira etapa
 					if (RS[r].time > 1){
@@ -434,7 +454,10 @@ public class Tomasulo {
 					else RS[r].time--;
 				}
 				
+				// Instruções diferentes de "lw"
 				else{
+					// Só atualizam RS[r].result assim que o tempo
+					// chega em zero
 					if (--RS[r].time != 0)
 						continue;
 					
@@ -450,9 +473,15 @@ public class Tomasulo {
 					else if (RS[r].instruction.equals("addi"))
 						RS[r].result = RS[r].vj + RS[r].a;
 					
+					// Caso especial: resultado em ROB[h].a
 					else if (RS[r].instruction.equals("sw"))
 						ROB[h].a = RS[r].vj + RS[r].a;
 					
+					// BRANCHES =================================
+					// É necessário dividir RS[r].a por 4 para as instruções
+					// de branch. Isso ocorre porque nosso pc faz contagem
+					// por instrução, e não por byte -> cada instrução possui
+					// 32 bits = 4 bytes
 					else if (RS[r].instruction.equals("beq"))
 						if (RS[r].vj == RS[r].vk)
 							RS[r].result = ROB[h].pc + RS[r].a / 4 + 1;
@@ -470,11 +499,13 @@ public class Tomasulo {
 							RS[r].result = ROB[h].pc + RS[r].a / 4 + 1;
 						else
 							RS[r].result = ROB[h].pc + 1;
+					// ==========================================
 				}
 				
 			}
 		}
 		
+		// COMENTAR
 		// Segunda etapa do load
 		if (loadStep2 != -1){
 			int r = loadStep2;
@@ -485,24 +516,38 @@ public class Tomasulo {
 	}
 
 	private void store(){
+		// Durante a operação de store de instruções não "sw",
+		// apenas uma instrução pode utilizar o barramento por
+		// clock. cdb guarda o índice na Estação de Reserva da
+		// instrução que utilizará o barramento
 		int cdb = -1;
 		
+		// Para cada tarefa na Estação de Reserva
 		for (int r = 1; r < RSSIZE; r++){
+			// Não estamos interassados em tarefas já realizadas
 			if (!RS[r].busy)
 				continue;
 			
+			// Só podemos realizar a operação de store após o término
+			// da execução
 			int h = RS[r].dest;
 			if (!ROB[h].state.equals("Execute") || RS[r].time != 0)
 				continue;
 			
+			// Caso "sw"
 			if (RS[r].instruction.equals("sw")){
+				// qk precisa estar livre de dependência
 				if (RS[r].qk == 0){
+					// Atualiza o valor no Buffer de Reordenação
 					ROB[h].value = RS[r].vk;
 					ROB[h].state = "Write";
+					// Desocupa Estação de Reserva
 					RS[r].busy = false;
 				}
 			}
 			
+			// Demais instruções disputam pelo barramento. Será armazenada
+			// em cdb a de maior prioridade (mais antiga) após o for
 			else{
 				if (cdb != -1){
 					int b = RS[cdb].dest;
@@ -514,12 +559,20 @@ public class Tomasulo {
 			
 		}
 		
+		// Se cdb == -1, então nenhuma instrução solicitou
+		// o barramento
 		if (cdb != -1){
 			int r = cdb;
 			int h = RS[r].dest;
 			
+			// Por que não esperar qk == 0?
+			
+			// Desocupa Estação de Reserva
 			RS[r].busy = false;
 			
+			// Atualiza os valores vj e vk de todas as
+			// instruções que dependiam do novo resultado
+			// calculado
 			for (int x = 1; x < RSSIZE; x++){
 				if (RS[x].qj == h){
 					RS[x].vj = RS[r].result;
@@ -531,26 +584,32 @@ public class Tomasulo {
 				}
 			}
 			
+			// Atualiza Buffer de Reordenação
 			ROB[h].value = RS[r].result;
 			ROB[h].state = "Write";
 		}
 	}
 	
 	private void consolidate(){
+		// Apenas o primeiro elemento do Buffer de Reordenação
+		// pode ser consolidado
 		int h = bufferHead();
 		
+		// Buffer de Reordenação vazio
 		if (h < 0)
 			return;
 		
+		// Só faz sentido consolidar uma instrução no estado "Write"
 		if (!ROB[h].state.equals("Write"))
 			return;
 		
+		// Destino do resultado
 		int dest = ROB[h].dest;
 		
+		// COMENTAR
 		if (ROB[h].instruction.equals("beq") ||
 			ROB[h].instruction.equals("ble") ||
 			ROB[h].instruction.equals("bne")){
-			// Como verificar se o branch foi mispredicted?
 			
 			if (detourBuffer[ROB[h].pc].destPC != ROB[h].value){
 				System.out.println("ERRRRRRROUUUU\n");
@@ -615,16 +674,20 @@ public class Tomasulo {
 			
 		}
 		
+		// Caso "sw", armazenar ROB[h].value na posição de memória calculada
 		else if (ROB[h].instruction.equals("sw")){
 			int a = ROB[h].a;
 			dataMemory[a] = ROB[h].value;
 		}
 		
+		// Nos demais casos, colocar no registrador "dest" o resultado
 		else
 			RegisterStat[dest].value = ROB[h].value;
 		
+		// Liberar o Buffer de Reordenação
 		ROB[h].busy = false;
 		ROB[h].state = "Commit";
+		// Liberar o registrador, se não há mais dependência
 		if (dest >= 0 && RegisterStat[dest].reorder == h)
 			RegisterStat[dest].busy = false;
 	}
