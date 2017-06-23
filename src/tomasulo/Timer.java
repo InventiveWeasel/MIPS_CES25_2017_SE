@@ -6,7 +6,7 @@ import java.time.Instant;
 public abstract class Timer
 {
 	// Define a taxa dos clocks
-	public static final double CLOCKS_PER_SEC = 20;
+	public static double CLOCKS_PER_SEC = 20;
 	
 	private static Instant _referencia = null;
 	

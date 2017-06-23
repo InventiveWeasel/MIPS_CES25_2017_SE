@@ -13,6 +13,7 @@ public class Tomasulo {
 	private final int ROBSIZE = 1 + 10; // id 0 nao utilizado
 	private final int RSSIZE = 1 + 11; // id 0 nao utilizado
 	private final int MEMORYSIZE = 4096;
+	private boolean pause = false;
 	
 	// Vetor de estados dos registradores (indexados de 0 a 31)
 	private Register[] RegisterStat;
@@ -59,6 +60,7 @@ public class Tomasulo {
 	// Construtor: apenas inicializa e declara algumas variávels
 	public Tomasulo(ArrayList<String> instructions, int type, appGUI frame){
 		gui = frame; 
+		gui.setTomasulo(this);
 		predictionType = type;
 		
 		RegisterStat = new Register[REGSIZE];
@@ -210,22 +212,24 @@ public class Tomasulo {
 			int start = Timer.tempoDecorrido();
 			int end = Timer.tempoDecorrido();
 			
-			// Espera 1 clock do Timer antes de avançar
-			while(end - start < 1){
-				end = Timer.tempoDecorrido();
+			if(!pause){
+				// Espera 1 clock do Timer antes de avançar
+				while(end - start < 1){
+					end = Timer.tempoDecorrido();
+				}
+				
+				// As fases do algoritmo são executadas em ordem contrária,
+				// pois assim evita-se que uma instrução consiga passar por mais
+				// de uma etapa num mesmo ciclo de clock
+				consolidate();
+				store();
+				execute();
+				if (pc < instMemory.size())
+					issue();
+				
+				clockCount++;
+				updateTables();
 			}
-			
-			// As fases do algoritmo são executadas em ordem contrária,
-			// pois assim evita-se que uma instrução consiga passar por mais
-			// de uma etapa num mesmo ciclo de clock
-			consolidate();
-			store();
-			execute();
-			if (pc < instMemory.size())
-				issue();
-			
-			clockCount++;
-			updateTables();
 		}
 	}
 
@@ -787,4 +791,16 @@ public class Tomasulo {
 		return head;
 	}
 	// ==========================================================
+	
+	public boolean isPaused(){
+		return pause;
+	}
+	
+	public void pause(){
+		pause = true;
+	}
+	
+	public void play(){
+		pause = false;
+	}
 }

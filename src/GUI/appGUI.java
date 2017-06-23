@@ -15,6 +15,9 @@ import java.awt.GridLayout;
 import javax.swing.JTable;
 import javax.swing.JScrollPane;
 import javax.swing.table.DefaultTableModel;
+
+import tomasulo.Tomasulo;
+
 import java.awt.Component;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
@@ -24,6 +27,8 @@ import javax.swing.border.TitledBorder;
 import javax.swing.UIManager;
 import java.awt.Color;
 import javax.swing.ImageIcon;
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
 
 public class appGUI extends JFrame {
 
@@ -33,6 +38,7 @@ public class appGUI extends JFrame {
 	private JTable table_2;
 	private JTable table_3;
 	private JTable table_4;
+	private Tomasulo tomasulo;
 
 	/**
 	 * Launch the application.
@@ -120,6 +126,11 @@ public class appGUI extends JFrame {
 		panel_1.setLayout(new BorderLayout(0, 0));
 		
 		JButton btnNewButton = new JButton("Play");
+		btnNewButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				tomasulo.play();
+			}
+		});
 		panel_1.add(btnNewButton);
 		
 		JPanel panel_2 = new JPanel();
@@ -127,6 +138,10 @@ public class appGUI extends JFrame {
 		panel_2.setLayout(new BorderLayout(0, 0));
 		
 		JButton btnNewButton_1 = new JButton("FastForward");
+		btnNewButton_1.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+			}
+		});
 		panel_2.add(btnNewButton_1);
 		
 		JPanel panel_3 = new JPanel();
@@ -134,6 +149,11 @@ public class appGUI extends JFrame {
 		panel_3.setLayout(new BorderLayout(0, 0));
 		
 		JButton btnPause = new JButton("Pause");
+		btnPause.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				tomasulo.pause();
+			}
+		});
 		panel_3.add(btnPause);
 		
 		JPanel panel_5 = new JPanel();
@@ -291,5 +311,9 @@ public class appGUI extends JFrame {
 						"Endere\u00E7o", "Valor"
 					}
 				));
+	}
+	
+	public void setTomasulo(Tomasulo tom){
+		tomasulo = tom;
 	}
 }
