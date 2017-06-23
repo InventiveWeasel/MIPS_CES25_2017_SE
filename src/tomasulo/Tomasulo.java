@@ -139,7 +139,8 @@ public class Tomasulo {
 			execute();
 			store();
 			execute();
-			issue();
+			if (pc < instMemory.size())
+				issue();
 			updateTables();
 			
 			int end = Timer.tempoDecorrido();
