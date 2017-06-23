@@ -1,5 +1,7 @@
 package tomasulo;
 import GUI.appGUI;
+
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 
 public class Tomasulo {
@@ -32,8 +34,12 @@ public class Tomasulo {
 	private int[] dataMemory;
 	// Memória de instruções
 	private ArrayList<String> instMemory;
-	// COMENTAR
+	// Contador de ids para o Buffer de Reordenação
+	private int bufferId;
+	// Conta quantas instruções foram iniciadas pelo simulador
 	private int instCount;
+	// Contador de clocks
+	private int clockCount;
 	// Program Counter
 	private int pc;
 	
@@ -93,7 +99,9 @@ public class Tomasulo {
 		dataMemory = new int[MEMORYSIZE];
 		instMemory = instructions;
 		
+		bufferId = 0;
 		instCount = 0;
+		clockCount = 0;
 		pc = 0;
 	}
 	
@@ -107,6 +115,8 @@ public class Tomasulo {
 	
 	// Quando chamado, este método atualiza as tabelas de output
 	private void updateTables(){
+		DecimalFormat df = new DecimalFormat("0.000");
+		
 		//Update RSMatrix
 		for(int i=1; i < RSSIZE; i++){
 			RSMatrix[i-1][0] = "ER" + i;
@@ -151,13 +161,13 @@ public class Tomasulo {
 		
 		gui.updateRegsTable(RegisterStatMatrix);
 		
-		ExecutionDataMatrix[0][1] = "" + Timer.tempoDecorrido();
+		ExecutionDataMatrix[0][1] = "" + clockCount;
 		ExecutionDataMatrix[1][1] =	"" + pc;
 		ExecutionDataMatrix[2][1] =	"" + instCount;
 		if(Timer.tempoDecorrido() == 0)
 			ExecutionDataMatrix[3][1] = ""; 
 		else
-			ExecutionDataMatrix[3][1] =	"" + instCount/Timer.tempoDecorrido();
+			ExecutionDataMatrix[3][1] =	"" + df.format(instCount * 1.0 / clockCount);
 		
 		gui.updateExecTable(ExecutionDataMatrix);
 		
@@ -206,6 +216,7 @@ public class Tomasulo {
 			if (pc < instMemory.size())
 				issue();
 			
+			clockCount++;
 			updateTables();
 		}
 	}
@@ -262,6 +273,7 @@ public class Tomasulo {
 		// Em caso de jmp, basta atualizar o pc
 		if (type == 'J'){
 			pc = address;
+			instCount++;
 			return;
 		}
 		
@@ -332,7 +344,7 @@ public class Tomasulo {
 		ROB[b].instruction = name;
 		ROB[b].inst_param = param;
 		ROB[b].state = "Issue";
-		ROB[b].id = instCount + 1;
+		ROB[b].id = bufferId + 1;
 		ROB[b].pc = pc;
 		ROB[b].busy = true;
 		
@@ -373,7 +385,10 @@ public class Tomasulo {
 		else
 			RS[r].time = 1;
 		
-		// COMENTAR
+		// Dado que um novo elemento foi adicionado ao Buffer de Reordenação,
+		// precisamos incrementar o contador de ids
+		bufferId++;
+		// E, obviamente, o contador de instruções
 		instCount++;
 		
 		// Em caso de alteração no seguimento do programa, makeDetour faz a
@@ -653,7 +668,7 @@ public class Tomasulo {
 					}	
 				}
 					
-				instCount = ROB[h].id;
+				bufferId = ROB[h].id;
 				
 				for (int b = 1; b < ROBSIZE; b++){
 					if (ROB[b].id > ROB[h].id){
@@ -740,7 +755,7 @@ public class Tomasulo {
 	}
 	
 	private int nextBufferEntry(){
-		int id = instCount % (ROBSIZE - 1) + 1;
+		int id = bufferId % (ROBSIZE - 1) + 1;
 		if (ROB[id].busy)
 			return -1;
 		return id;
