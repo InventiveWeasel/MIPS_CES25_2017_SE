@@ -179,7 +179,7 @@ public class Tomasulo {
 			RegisterStatMatrix[i][0] = "R" + i;
 			RegisterStatMatrix[i][3] = "R" + (i + 8);
 			RegisterStatMatrix[i][6] = "R" + (i + 16);
-			RegisterStatMatrix[i][9] = "R" + (i + 2);
+			RegisterStatMatrix[i][9] = "R" + (i + 24);
 			RegisterStatMatrix[i][1] = outputFormat2(RegisterStat[i].reorder);
 			RegisterStatMatrix[i][2] = "" + RegisterStat[i].value;	
 			RegisterStatMatrix[i][4] = outputFormat2(RegisterStat[i+8].reorder);
