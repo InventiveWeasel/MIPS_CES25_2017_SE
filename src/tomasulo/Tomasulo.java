@@ -56,9 +56,9 @@ public class Tomasulo {
 	private int loadStep2 = -1;
 	
 	// Tipo de predição:
-	// 1: COMENTAR
-	// 2: COMENTAR
-	// 3: COMENTAR
+	// 1: sempre mesma escolha
+	// 2: 1 bit de predição
+	// 3: 2 bits de predição
 	private int predictionType;
 	
 	//Referência para objeto responsável pela interface gráfica
@@ -88,7 +88,6 @@ public class Tomasulo {
 		for (int i = 9; i < RSSIZE; i++) // 3
 			RS[i] = new ReserveStationEntry(i, "Mult");
 		
-		// COMENTAR
 		detourBuffer = new DetourBufferEntry[instructions.size()];
 		for (int i = 0; i < instructions.size(); i++)
 			detourBuffer[i] = new DetourBufferEntry();
@@ -260,12 +259,11 @@ public class Tomasulo {
 		}
 	}
 
-	// COMENTAR
 	private void makeDetour(){
 		int pcAux = pc;
 		if(predictionType == 1) //Detour que sempre supõe que segue
 			pc += 1;
-		else if(predictionType == 3) //Detour dinâmico de 1 bit
+		else if(predictionType == 2) //Detour dinâmico de 1 bit
 		{
 			//Padronizando 0 como seguir
 			if(detourBuffer[pc].bitPredictor == 0)
@@ -278,8 +276,8 @@ public class Tomasulo {
 			}
 			detourBuffer[pcAux].destPC = pc;
 		}
-		else if(predictionType == 4){
-			if(detourBuffer[pc].bitPredictor == 1 || detourBuffer[pc].bitPredictor == 10)
+		else if(predictionType == 3){
+			if(detourBuffer[pc].bitPredictor == 11 || detourBuffer[pc].bitPredictor == 10)
 				pc += 1;
 			else{
 				if(detourBuffer[pc].destPC == -1)
@@ -476,9 +474,7 @@ public class Tomasulo {
 				else if (RS[r].equals("lw"))
 					startCondition = noStoresBefore(h);
 				
-				// Suspeito. Além disso, qk para lw não parece definido,
-				// assim como rd para tipo R
-				// COMENTAR
+				// Demais casos
 				else
 					startCondition = (RS[r].qk == 0);
 				
@@ -677,27 +673,25 @@ public class Tomasulo {
 		// Destino do resultado
 		int dest = ROB[h].dest;
 		
-		// COMENTAR
+		// Instruções de desvio
 		if (ROB[h].instruction.equals("beq") ||
 			ROB[h].instruction.equals("ble") ||
 			ROB[h].instruction.equals("bne")){
 			
-			if (detourBuffer[ROB[h].pc].destPC != ROB[h].value){
-				System.out.println("ERRRRRRROUUUU\n");
-				
+			if (detourBuffer[ROB[h].pc].destPC != ROB[h].value){				
 				pc = ROB[h].value; // fetch PC
 				
-				if(predictionType == 3 || predictionType == 4)
+				if(predictionType == 2 || predictionType == 3)
 					detourBuffer[ROB[h].pc].destPC = ROB[h].value;
 				
-				if(predictionType == 3){
+				if(predictionType == 2){
 					if(detourBuffer[ROB[h].pc].bitPredictor == 0)
 						detourBuffer[ROB[h].pc].bitPredictor = 1;
 					else
 						detourBuffer[ROB[h].pc].bitPredictor = 0;
 				}
 				
-				else if (predictionType == 4){
+				else if (predictionType == 3){
 					switch(detourBuffer[ROB[h].pc].bitPredictor){
 					case 11:
 						detourBuffer[ROB[h].pc].bitPredictor = 10; break;
@@ -729,9 +723,7 @@ public class Tomasulo {
 				}
 			}
 			else{
-				System.out.println("MISERAVI\n");
-				
-				if(predictionType == 4){
+				if(predictionType == 3){
 					switch(detourBuffer[ROB[h].pc].bitPredictor){
 					case 0:
 						detourBuffer[ROB[h].pc].bitPredictor = 1; break;
