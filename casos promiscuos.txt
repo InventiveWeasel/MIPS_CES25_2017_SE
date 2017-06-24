@@ -1,2 +1,0 @@
-Etapas do lw: 2 clocks pra cada
-Número de instruções: consideraremos qualquer instrução iniciada (mesmo sendo descartada posteriormente)
