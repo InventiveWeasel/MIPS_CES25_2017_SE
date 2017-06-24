@@ -320,6 +320,11 @@ public class Tomasulo {
 		if (b < 0)
 			return;
 		
+		if (name.equals("nop")){
+			pc++;
+			return;
+		}
+		
 		// Obtém o próximo campo disponível na Estação de Reserva.
 		// Retorna -1 se estiver cheia
 		int r = nextReserveStationEntry(category);
