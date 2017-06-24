@@ -752,8 +752,10 @@ public class Tomasulo {
 		ROB[h].busy = false;
 		ROB[h].state = "Commit";
 		// Liberar o registrador, se não há mais dependência
-		if (dest >= 0 && RegisterStat[dest].reorder == h)
+		if (dest >= 0 && RegisterStat[dest].reorder == h){
 			RegisterStat[dest].busy = false;
+			RegisterStat[dest].reorder = -1;
+		}
 	}
 	
 	// FUNÇÕES AUXILIARES =======================================
