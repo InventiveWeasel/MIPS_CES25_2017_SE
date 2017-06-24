@@ -309,7 +309,7 @@ public class Tomasulo {
 		
 		// Em caso de jmp, basta atualizar o pc
 		if (type == 'J'){
-			pc = address;
+			pc = address / 4;
 			instCount++;
 			return;
 		}
