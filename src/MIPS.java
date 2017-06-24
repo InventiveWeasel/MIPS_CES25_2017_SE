@@ -29,15 +29,18 @@ public class MIPS {
 			
 			String type = br.readLine().substring(0, 1);
 			predictionType = Integer.parseInt(type);
-			System.out.println(predictionType);
+			
+			br.close();
 		}
 		catch (IOException e){
 			e.printStackTrace();
 		}
 		// ==============================================================================
 		
+		System.out.println("Prediction Type: " + predictionType);
+		
 		try {
-			bufferInsts();	
+			bufferInsts();
 			Tomasulo tomas = new Tomasulo(instMemory, predictionType, frame);
 			tomas.run();
 			
