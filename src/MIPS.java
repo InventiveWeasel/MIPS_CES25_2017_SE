@@ -19,9 +19,26 @@ public class MIPS {
 		frame = new appGUI();
 		frame.setVisible(true);
 		
+		// Obtém o tipo de predição (1, 2 ou 3) a partir de um arquivo ==================
+		int predictionType = 1; // Valor default, caso não ache o arquivo
+		InputStream is = null;
+		try{
+			is = new FileInputStream("predictionType.txt");
+			InputStreamReader isr = new InputStreamReader(is);
+			BufferedReader br = new BufferedReader(isr);
+			
+			String type = br.readLine().substring(0, 1);
+			predictionType = Integer.parseInt(type);
+			System.out.println(predictionType);
+		}
+		catch (IOException e){
+			e.printStackTrace();
+		}
+		// ==============================================================================
+		
 		try {
 			bufferInsts();	
-			Tomasulo tomas = new Tomasulo(instMemory, 3, frame);
+			Tomasulo tomas = new Tomasulo(instMemory, predictionType, frame);
 			tomas.run();
 			
 		} catch (IOException e) {
